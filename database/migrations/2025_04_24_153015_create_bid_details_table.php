@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateBidDetailsTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('bid_details', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('bid_id')->constrained('bid_summaries')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('products');
+            $table->decimal('qty', 10, 2);
+            $table->decimal('rate', 10, 2);
+            $table->decimal('total', 10, 2);
+            $table->decimal('discount', 10, 2);
+            $table->decimal('delivery_charges', 10, 2);
+            $table->decimal('tax', 10, 2);
+            $table->decimal('net_amount', 10, 2);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('bid_details');
+    }
+}
