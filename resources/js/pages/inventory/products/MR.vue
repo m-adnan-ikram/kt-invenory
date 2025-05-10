@@ -72,7 +72,7 @@
 
       <!-- Add MR Modal -->
       <div class="modal fade" :id="formID" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-dialog modal-lg modal-80w modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">Add New Material Request</h5>
@@ -81,37 +81,34 @@
             <div class="modal-body">
               <div class="row">
                 <!-- Product select -->
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-3">
                   <label>Select Product</label>
-                  <select v-model="singleProduct.product_id" class="form-control">
+                  <select v-model="singleProduct.product_id" class="form-control select2">
                     <option value="">Select</option>
                     <option v-for="prod in products" :key="prod.id" :value="prod.id">{{ prod.name }}</option>
                   </select>
                 </div>
-
                 <!-- Qty -->
                 <div class="form-group col-md-3">
                   <label>Quantity</label>
                   <input type="number" class="form-control" v-model="singleProduct.qty">
                 </div>
-
                 <!-- Reason -->
                 <div class="form-group col-md-4">
                   <label>Reason</label>
                   <textarea class="form-control" v-model="singleProduct.reason"></textarea>
                 </div>
-
                 <!-- Add Button -->
-                <div class="form-group col-md-1">
+                <div class="form-group col-md-2">
                   <label>Action</label>
                   <button class="btn btn-success btn-sm" @click="addProduct">
-                    <i class="fa fa-plus"></i>
+                    <i class="fa fa-plus"></i> Add Product
                   </button>
                 </div>
               </div>
 
               <!-- Products Added Table -->
-              <div class="table-responsive mt-3" v-if="productsList.length > 0">
+              <div class="table-responsive mt-3">
                 <h5>Products Added</h5>
                 <table class="table table-bordered">
                   <thead>
@@ -135,6 +132,9 @@
                         </button>
                       </td>
                     </tr>
+                    <tr class="text-center w-100">
+                      <p><i>No Product Added</i></p>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -153,12 +153,12 @@
       </div>
 
       <!-- View MR Details Modal -->
-      <div class="modal fade" id="viewMRModal" tabindex="-1" role="dialog" v-if="selectedMR">
+      <div class="modal fade" id="viewMRModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-          <div class="modal-content">
+          <div class="modal-content" v-if="selectedMR">
             <div class="modal-header">
               <h5 class="modal-title">MR Details - MR-{{ selectedMR.id }}</h5>
-              <button type="button" class="close" @click="selectedMR = null">&times;</button>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
             </div>
             <div class="modal-body">
               <table class="table table-bordered">
@@ -211,7 +211,7 @@
 
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" @click="selectedMR = null">Close</button>
+              <button class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
@@ -225,27 +225,36 @@
 <script>
 import Swal from 'sweetalert2';
 
-export default {
-  data() {
-    return {
-      formID: 'addMRForm',
-      products: [],
-      mrs: [],
-      singleProduct: { product_id: '', qty: '', reason: '' },
-      productsList: [],
-      selectedMR: null,
-      loading: false,
-      deleteId: null,
-      editingIndex: null, 
-      selectedMR: {
-      details: [] // full list
+  export default {
+    data() {
+      return {
+        formID: 'addMRForm',
+        products: [],
+        mrs: [],
+        singleProduct: { product_id: '', qty: '', reason: '' },
+        productsList: [],
+        selectedMR: null,
+        loading: false,
+        deleteId: null,
+        editingIndex: null,
+        editDetailData: {}
+      };
     },
-    editedDetails: [] // only edited rows
-    };
-  },
-  mounted() {
-    this.fetchMRs();
-  },
+    mounted() {
+      this.fetchMRs();
+
+      // Attach modal close listener for Bootstrap 4
+      const modalEl = document.getElementById('viewMRModal');
+      if (modalEl) {
+        $(modalEl).on('hidden.bs.modal', this.cancelEdit);
+      }
+    },
+    beforeUnmount() {
+      const modalEl = document.getElementById('viewMRModal');
+      if (modalEl) {
+        $(modalEl).off('hidden.bs.modal', this.cancelEdit);
+      }
+    },
   methods: {
     async fetchMRs() {
       try {
@@ -292,105 +301,109 @@ export default {
       this.singleProduct = { product_id: '', qty: '', reason: '' };
     },
     viewMR(mr) {
-      this.selectedMR = mr;
+  this.selectedMR = JSON.parse(JSON.stringify(mr)); // Deep clone to avoid direct mutation
+  this.editingIndex = null;
+  this.editDetailData = {};
     },
-   
-  editDetail(detail, index) {
-    this.editingIndex = index;
-    this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
-  },
-  cancelEdit() {
-    this.editingIndex = null;
-    this.editDetailData = {};
-  },
+    editDetail(detail, index) {
+        this.editingIndex = index;
+        this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
+      },
+    cancelEdit() {
+        this.editingIndex = null;
+        this.editDetailData = {};
+      },
+    async saveDetail(index) {
+        try {
+          if (!this.editDetailData || !this.editDetailData.id) {
+            throw new Error('No detail selected for update.');
+          }
+          const payload = {
+            id: this.editDetailData.id,
+            qty: this.editDetailData.qty,
+            reason: this.editDetailData.reason,
+          };
 
-  async saveDetail(index) {
-  try {
-    if (!this.editDetailData || !this.editDetailData.id) {
-      throw new Error('No detail selected for update.');
-    }
+          const response = await this.callApi('post', 'mr/detail-update', payload);
 
-    const payload = {
-      id: this.editDetailData.id,
-      qty: this.editDetailData.qty,
-      reason: this.editDetailData.reason,
-    };
+          if (response.data && response.data.success) {
+            // Update locally (correct way in Vue 3)
+            this.selectedMR.details[index] = { ...this.editDetailData };
 
-    const response = await this.callApi('post', 'mr/detail-update', payload);
+            this.cancelEdit();
 
-    if (response.data && response.data.success) {
-      // Update locally (correct way in Vue 3)
-      this.selectedMR.details[index] = { ...this.editDetailData };
+            Swal.fire('Success', 'MR Updated successfully!', 'success');
+          } else {
+            Swal.fire('Error', error.response?.data?.message || 'Failed to update Material Request Detail!', 'error');
+          }
+        } catch (error) {
+          Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+        }
+     },
+    async deleteDetail(id, index) {
+      try {
+        const confirm = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'You will not be able to recover this detail!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!',
+        });
 
-      this.cancelEdit();
-
-      Swal.fire('Success', 'MR Updated successfully!', 'success');
-    } else {
-      Swal.fire('Error', error.response?.data?.message || 'Failed to update Material Request Detail!', 'error');
-    }
-  } catch (error) {
-    Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
-  }
-},
-
-async deleteDetail(id, index) {
-  try {
-    const confirm = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'You will not be able to recover this detail!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!',
-    });
-
-    if (confirm.isConfirmed) {
-      const response = await this.callApi('post', 'mr/detail-delete', { id });
-      if (response.data && response.data.success) {
-        // Remove detail from local array
-        this.selectedMR.details.splice(index, 1);
-        Swal.fire('Success', 'Deleted successfully!', 'success');
-      } else {
-        Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+        if (confirm.isConfirmed) {
+          const response = await this.callApi('post', 'mr/detail-delete', { id });
+          if (response.data && response.data.success) {
+            // Remove detail from local array
+            this.selectedMR.details.splice(index, 1);
+            Swal.fire('Success', 'Deleted successfully!', 'success');
+          } else {
+            Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+          }
+        }
+      } catch (error) { 
+        Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
       }
-    }
-  } catch (error) { 
-    Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
-  }
-},
-async confirmDelete(id) {
-  try {
-    const confirm = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'This will permanently delete this Material Request!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel'
-    });
+    },
+    async confirmDelete(id) {
+      try {
+        const confirm = await Swal.fire({
+          title: 'Are you sure?',
+          text: 'This will permanently delete this Material Request!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, delete it!',
+          cancelButtonText: 'Cancel'
+        });
 
-    if (confirm.isConfirmed) {
-      // User clicked "Yes, delete it!"
-      const response = await this.callApi('post', 'mr/mr-delete', { id });
+        if (confirm.isConfirmed) {
+          // User clicked "Yes, delete it!"
+          const response = await this.callApi('post', 'mr/mr-delete', { id });
 
-      if (response && response.data && response.data.success) {
-        Swal.fire('Success', 'Deleted successfully!', 'success');
+          if (response && response.data && response.data.success) {
+            Swal.fire('Success', 'Deleted successfully!', 'success');
 
-        // Reload the list or remove the item locally
-        this.fetchMRs(); // or whatever you use to refresh
-      } else {
-        Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+            // Reload the list or remove the item locally
+            this.fetchMRs(); // or whatever you use to refresh
+          } else {
+            Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+          }
+        } 
+        // else: User clicked "Cancel" => Do nothing
+      } catch (error) {
+        console.error('Delete MR error:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
       }
-    } 
-    // else: User clicked "Cancel" => Do nothing
-  } catch (error) {
-    console.error('Delete MR error:', error);
-    Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
-  }
-}
+    },
+    beforeUnmount() {
+      const modalEl = document.getElementById('viewMRModal');
+      if (modalEl) {
+        modalEl.removeEventListener('hidden.bs.modal', this.cancelEdit);
+      }
+    },
 
   }
 }

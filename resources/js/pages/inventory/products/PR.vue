@@ -219,36 +219,41 @@
       <!-- PRN Detail Modal -->
       <div class="modal fade" id="viewPRNModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-          <div class="modal-content">
+          <div class="modal-content shadow rounded-3">
             <div class="modal-header">
-              <h5 class="modal-title">PRN Details - PRN-{{ selectedPRN?.id }}</h5>
-              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+              <h5 class="modal-title">PRN Details - <span class="fw-semibold">PRN-{{ selectedPRN?.id }}</span></h5>
+              <button type="button" class="btn btn-close-white" data-bs-dismiss="modal" aria-label="Close">&times;</button>
             </div>
+            <hr>
             <div class="modal-body" v-if="selectedPRN">
-              <p><strong>Requested By:</strong> {{ selectedPRN.mr.requested_by_user?.name }}</p>
-              <p><strong>MR ID:</strong> MR-{{ selectedPRN.mr.id }}</p>
-              <p><strong>Created At:</strong> {{ new Date(selectedPRN.created_at).toLocaleString() }}</p>
+              <div class="mb-3">
+                <p class="mb-1"><strong>Requested By:</strong> {{ selectedPRN.mr.requested_by_user?.name }}</p>
+                <p class="mb-1"><strong>MR ID:</strong> MR-{{ selectedPRN.mr.id }}</p>
+                <p class="mb-3"><strong>Created At:</strong> {{ new Date(selectedPRN.created_at).toLocaleString() }}</p>
+              </div>
 
-              <h6>Products</h6>
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(detail, index) in selectedPRN.details" :key="detail.id">
-                    <td>{{ index + 1 }}</td>
-                    <td>{{ detail.product?.name }}</td>
-                    <td>{{ detail.qty }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h6 class="mb-3">Products</h6>
+              <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Product</th>
+                      <th scope="col">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(detail, index) in selectedPRN.details" :key="detail.id">
+                      <td>{{ index + 1 }}</td>
+                      <td>{{ detail.product?.name }}</td>
+                      <td>{{ detail.qty }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>

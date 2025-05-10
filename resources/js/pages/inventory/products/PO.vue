@@ -118,8 +118,7 @@
                   <table class="table table-striped table-hover">
                     <thead>
                       <tr>
-                        <th>Sr No.</th>
-                        <th>BID #</th>
+                        <th>Sr No.</th> 
                         <th>MR #</th>
                         <th>PRN #</th>
                         <th>Date</th>
@@ -128,26 +127,29 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(bid, index) in bids" :key="bid.id">
-                      <td>{{ index + 1 }}</td>
-                      <td>BID - {{ bid.id || 'N/A' }}</td>
-                      <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
-                      <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
-                      <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
-                      <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
-                      <td>
+                      <tr v-for="(bid, index) in uniquePRNBids" :key="bid.id">
+                        <td>{{ index + 1 }}</td>
+                        <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
+                        <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
+                        <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
+                        <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
+                        <td>
+                          <span v-if="bid.status == '2'" class="badge badge-success">Approved</span>
+                          <span v-else-if="bid.status == '1'" class="badge badge-warning">Processing</span>
+                          <span v-else class="badge badge-danger">Rejected</span>
+                        </td>
+                        <td>
                         <button class="btn btn-success btn-sm" @click="openAddPOModal(bid.prn_id)">
                           <i class="fas fa-check"></i>
                         </button>
-                        <button class="btn btn-info btn-sm ml-1"
-                        @click="viewBidsByPRN(bid.prn?.id)">
+                          <button class="btn btn-info btn-sm ml-1" @click="viewBidsByPRN(bid.prn?.id)">
                             <i class="fas fa-eye"></i>
                           </button>
-                      </td>
+                        </td>
                       </tr>
-                      <tr v-if="bids.length == 0">
-                          <p class="text-center">No Purchase Orders Found</p>
-                      </tr> 
+                      <tr v-if="uniquePRNBids.length == 0">
+                        <td colspan="7" class="text-center">No Bid Summaries Found</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -155,54 +157,55 @@
             </div>
             </div>
         </div> 
-        <!-- Add PO Modal -->
-          <Add id="BidModal" v-if="showAddPOModal" :heading="'PO Request'" :errors="validationErrors" :success="success" :formID="formID"
-          @close="showAddPOModal = false; $('#BidModal').modal('hide');">
+       <!-- Add PO Modal -->
+        <Add id="BidModal" v-if="showAddPOModal" :heading="'PO Request'" :errors="validationErrors" :success="success" :formID="formID"
+          @close="showAddPOModal = false; $('#BidModal').modal('hide');">  
           <div class="modal-content">
-                <div class="modal-header py-2 bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-file-alt mr-2"></i> Bid Summary Detail</h5>
-                </div>
-                <div class="modal-body">
-                  <div v-for="(bid, bIndex) in selectedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
-                    <h5 class="text-warning">Bid #{{ bid.id }}</h5>
-                    <table class="table table-bordered table-striped">
-                      <thead class="thead-dark">
-                        <tr>
-                          <th>Select</th>
-                          <th>Supplier</th>
-                          <th>Product</th>
-                          <th>Rate</th>
-                          <th>Qty</th>
-                          <th>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(bid, bIndex) in selectedBids" :key="'b-' + bIndex">
-                          <template v-for="(detail, dIndex) in bid.details" :key="'d-' + dIndex">
-                            <tr>
-                              <td>
-                                <input type="checkbox" v-model="selectedDetails" :value="detail.id" />
-                              </td>
-                              <td>{{ bid.supplier?.name || 'N/A' }}</td>
-                              <td>{{ detail.product?.name || 'N/A' }}</td>
-                              <td>{{ detail.rate }}</td>
-                              <td>{{ detail.qty }}</td>
-                              <td>{{ detail.total }}</td>
-                            </tr>
-                          </template>
-                        </tr>
-                      </tbody>
-                    </table>
+            <div class="modal-header py-2 bg-primary text-white">
+              <h5 class="modal-title"><i class="fas fa-file-alt mr-2"></i> Bid Comparison Table</h5>
+            </div>
+            <div class="modal-body">
+              <div class="row">
+                <div
+                  class="col-md-6 mb-3"
+                  v-for="(bid, bIndex) in selectedBids"
+                  :key="bIndex"
+                >
+                  <div
+                    class="card border shadow-sm"
+                    v-for="(detail, dIndex) in bid.details"
+                    :key="'d-' + bIndex + '-' + dIndex"
+                  >
+                    <div class="card-body">
+                      <div class="mb-2">
+                        <div class="text-right">
+                          <input
+                            type="checkbox"
+                            class="form-check-input me-2"
+                            v-model="selectedDetails"
+                            :value="detail.id"
+                          />
+                        </div>
+                        <div>
+                          <h6>Supplier : <strong>{{ bid.supplier?.name || 'N/A' }}</strong></h6>
+                        </div>
+                      </div>
+                      <div class="text-muted">
+                        <div><strong>Product:</strong> {{ detail.product?.name || 'N/A' }}</div>
+                        <div><strong>Rate :</strong> <span class="badge bg-primary text-white mt-1">{{ detail.rate }} </span></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                </div>
-              <template v-slot:button>
-                <button type="button" class="btn btn-primary" :disabled="loading" @click="add">
-                  {{ loading ? 'Loading...' : 'Add' }}
-                </button> 
-              </template>
+              </div>
+            </div>
+          </div>
+          <template v-slot:button>
+            <button type="button" class="btn btn-primary" :disabled="loading" @click="add">
+              {{ loading ? 'Loading...' : 'Add' }}
+            </button>
+          </template>
         </Add>
- 
          <!-- VIEW BID MODAL -->
         <div class="modal fade" id="viewBidDetailModal" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-xl" role="document">
@@ -333,15 +336,25 @@
     mounted() {
       this.fetchBid_PO();
     },
+    computed: {
+        uniquePRNBids() {
+          const seen = new Set();
+          return this.bids.filter(bid => {
+            if (!bid.prn?.id || seen.has(bid.prn.id)) return false;
+            seen.add(bid.prn.id);
+            return true;
+          });
+        }
+    },
     methods: {
       async fetchBid_PO() {
         try {
           const response = await this.callApi('post', 'pos'); // API call to your controller
           if (response.data.success) {
-            this.bids = response.data.bids || [];
+            this.bids      = response.data.bids || [];
             this.suppliers = response.data.suppliers || [];
-            this.products = response.data.products || [];
-            this.pos = response.data.pos || [];
+            this.products  = response.data.products || [];
+            this.pos       = response.data.pos || [];
           }
         } catch (error) {
           console.error('Failed to fetch data:', error);
@@ -424,25 +437,36 @@
           parseFloat(bid.discount || 0)
         ).toFixed(2);
       },
-      confirmDecision(bidId, decision) {
-          const action = decision === 'approved' ? 'Approve' : 'Reject';
-          Swal.fire({
-            title: `${action} this bid?`,
-            text: `Are you sure you want to ${action.toLowerCase()} this bid?`,
-            icon: decision === 'approved' ? 'success' : 'warning',
-            showCancelButton: true,
-            confirmButtonText: `Yes, ${action}`,
-            cancelButtonText: 'Cancel',
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.markDecision(bidId, decision);
-              Swal.fire(`${action}d!`, `Bid has been marked as ${decision}.`, 'success');
-            }
-          });
+      async add() {
+        if (!this.selectedDetails.length) {
+          this.$emit('error', 'Please select at least one bid detail.');
+          return;
+        }
+
+        this.loading = true;
+
+        const payload = {
+          bid_detail_ids: this.selectedDetails
+        };
+
+        try {
+          const response = await this.callApi('post', 'pos/store', payload);
+          
+          if (response.status === 200 || response.status === 201) {
+            this.success = 'Purchase Order created successfully!';
+            this.selectedDetails = [];
+            this.$emit('close');
+            $('#BidModal').modal('hide');
+          } else {
+            this.$emit('error', response.data.message || 'Something went wrong');
+          }
+        } catch (err) {
+          console.error(err);
+          this.$emit('error', 'Failed to create Purchase Order');
+        } finally {
+          this.loading = false;
+        }
       },
-      markDecision(bidId, decision) {
-        this.$set(this.decisionMap, bidId, decision); // Vue 2 reactivity
-      }, 
     }
   };
   </script>

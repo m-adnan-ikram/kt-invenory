@@ -20,7 +20,6 @@
             </li>
           </ul>
         </div>
-
         <!-- BID TABLE -->
         <div class="col-12" v-if="activeTab === 'bid'">
           <div class="card card-primary">
@@ -32,8 +31,7 @@
                 <table class="table table-striped table-hover">
                   <thead>
                     <tr>
-                      <th>Sr No.</th>
-                      <th>BID #</th>
+                      <th>Sr No.</th> 
                       <th>MR #</th>
                       <th>PRN #</th>
                       <th>Date</th>
@@ -43,28 +41,26 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(bid, index) in bids" :key="bid.id">
-                      <td>{{ index + 1 }}</td>
-                      <td>BID - {{ bid.id || 'N/A' }}</td>
-                      <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
-                      <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
-                      <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
-                      <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
-                      <td>
+                    <tr v-for="(bid, index) in uniquePRNBids" :key="bid.id">
+                    <td>{{ index + 1 }}</td>
+                    <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
+                    <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
+                    <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
+                    <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
+                    <td>
                       <span v-if="bid.status == '2'" class="badge badge-success">Approved</span>
                       <span v-else-if="bid.status == '1'" class="badge badge-warning">Processing</span>
-                     <span v-else class="badge badge-danger">Rejected</span>
+                      <span v-else class="badge badge-danger">Rejected</span>
                     </td>
-                      <td>  
-                        <button class="btn btn-info btn-sm"
-                            @click="viewBidsByPRN(bid.prn?.id)">
-                            <i class="fas fa-eye"></i>
-                          </button>
-                      </td>
-                    </tr>
-                    <tr v-if="bids.length == 0">
-                      <td colspan="6" class="text-center">No Bid Summaries Found</td>
-                    </tr>
+                    <td>
+                      <button class="btn btn-info btn-sm" @click="viewBidsByPRN(bid.prn?.id)">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="uniquePRNBids.length == 0">
+                    <td colspan="7" class="text-center">No Bid Summaries Found</td>
+                  </tr>
                   </tbody>
                 </table>
               </div>
@@ -75,7 +71,7 @@
         <div class="col-12" v-if="activeTab === 'prn'">
           <div class="card card-primary">
             <div class="card-header">
-              <h4>Purchase Requisition Note - PRNs</h4>
+              <h4>Purchase Requisition Note - PRNs</h4> <span class="badge badge-primary">{{ prns.length }}</span>
             </div>
             <div class="card-body">
               <div class="table-responsive">
@@ -108,10 +104,10 @@
                             data-toggle="modal" 
                             @click="openBidModal(prn)">
                             <i class="fas fa-check"></i>
-                          </button>
+                        </button>
                         <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewPRNModal"
-                         @click="viewPRN(prn.id)">
-                          <i class="fas fa-eye"></i>
+                            @click="viewPRN(prn.id)">
+                              <i class="fas fa-eye"></i>
                         </button>
                       </td>
                     </tr>
@@ -128,9 +124,8 @@
         <div class="modal fade" id="viewPRNModal" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
             <div class="modal-content">
-              
               <!-- Modal Header -->
-              <div class="modal-header py-3">
+               <div class="modal-header py-3">
                 <h5 class="modal-title">
                   <i class="fas fa-file-alt mr-2"></i>
                   Purchase Requisition Note Detail - PRN # {{ selectedPRN?.prn_no || selectedPRN?.id || 'N/A' }}
@@ -167,9 +162,7 @@
 
               <!-- Modal Footer -->
               <div class="modal-footer py-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
-                  <i class="fas fa-times"></i> Close
-                </button>
+                <button class="btn btn-secondary" data-dismiss="modal">Close</button>
               </div>
 
             </div>
@@ -178,7 +171,6 @@
         <!-- Add Bid -->
         <Add :heading="'Add New Bid Summary'" :errors="validationErrors" :success="success" :formID="formID">
           <!-- Section: Requested Products -->  
-     
         <div v-for="(item, index) in bidFormRows" :key="item.id" class="border p-3 mb-3 rounded bg-light">
           <h6 class="mb-3 font-weight-bold">Bidder {{ index + 1 }}</h6>
           <div class="row">
@@ -197,111 +189,77 @@
                 {{ sup.name }}
               </option>
             </select>
-
           </div>
-
-
             <!-- Quotation Ref -->
             <div class="form-group col-md-4">
               <label>Quotation Ref <span class="text-danger">*</span></label>
               <input type="text" class="form-control" v-model="item.quotation_ref" placeholder="e.g. QUO-0012">
             </div>
-
             <!-- Quotation Date -->
             <div class="form-group col-md-4">
               <label>Quotation Date <span class="text-danger">*</span></label>
               <input type="date" class="form-control" v-model="item.quotation_date">
             </div>
-
-            <!-- Financial Terms -->
-            <div class="form-group col-md-3">
-              <label>Trade Classification</label>
-              <input type="text" class="form-control" v-model="item.trade_classification">
-            </div>
-
+             
             <div class="form-group col-md-3">
               <label>Advance (%)</label>
               <input type="number" class="form-control" v-model="item.advance_percent">
             </div>
-
             <div class="form-group col-md-3">
               <label>After Delivery (%)</label>
               <input type="number" class="form-control" v-model="item.after_delivery_percent">
             </div>
-
             <div class="form-group col-md-3">
               <label>Credit Days</label>
               <input type="number" class="form-control" v-model="item.credit_days">
             </div>
-
             <div class="form-group col-md-3">
               <label>Discount (Amount)</label>
               <input type="text" class="form-control" v-model="item.discount_amount">
             </div>
-
             <div class="form-group col-md-3">
               <label>Delivery Charges</label>
               <input type="text" class="form-control" v-model="item.delivery_charges">
             </div>
-
             <div class="form-group col-md-3">
               <label>Contact Person</label>
               <input type="text" class="form-control" v-model="item.contact_person">
             </div>
-
             <!-- Terms -->
             <div class="form-group col-md-12">
               <label>Terms & Conditions</label>
               <textarea class="form-control" v-model="item.terms" rows="3" placeholder="Mention payment or delivery terms here..."></textarea>
-            </div>
-
+            </div> 
             <!-- Products Quoted -->
             <div class="col-md-12 mt-3">
-            <h6 class="font-weight-bold">Products Quoted</h6>
-            <div v-for="(product, pIndex) in item.products" :key="pIndex" class="row mb-2">
-              <!-- Product Dropdown -->
-              <div class="form-group col-md-4"> 
-                <div class="d-flex justify-content-between">
-                  <label>Select Product</label>
-                  <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button>
+              <h6 class="font-weight-bold">Products Quoted</h6>
+              <div v-for="(product, pIndex) in item.products" :key="pIndex" class="row mb-2">
+                
+                <!-- Product Dropdown (read-only display instead of select) -->
+                <div class="form-group col-md-3">
+                  <label>Product</label>
+                  <input type="text" class="form-control" :value="getProductName(product.product_id)" readonly>
                 </div>
-                <!-- Category Dropdown -->
-                <select v-model="product.product_id" class="form-control select2">
-                  <option value="" selected disabled class="text-light">Select Product</option>
-                  <option v-for="pro in products" :key="pro.id" :value="pro.id">
-                    {{ pro.name }}
-                  </option>
-                </select>
-              </div>
 
-              <!-- Rate Input -->
-              <div class="form-group col-md-5">
-                <label>Rate</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  placeholder="Rate"
-                  v-model="product.rate"
-                />
-              </div>
+                <!-- Qty Display -->
+                <div class="form-group col-md-2">
+                  <label>Qty</label>
+                  <input type="number" class="form-control" v-model="product.qty" readonly>
+                </div>
 
-              <!-- Remove Button -->
-              <div class="form-group col-md-2 d-flex align-items-center">
-                <button class="btn btn-danger btn-sm"
-                @click="removeProduct(index, pIndex)"  
-                v-if="item.products.length > 1">
-                <i class="fa fa-minus"></i>
-              </button>
+                <!-- Rate Input -->
+                <div class="form-group col-md-3">
+                  <label>Rate</label>
+                  <input type="number" class="form-control" v-model.number="product.rate" @input="updateTotal(item, product)">
+                </div>
+
+                <!-- Total (auto-calculated) -->
+                <div class="form-group col-md-3">
+                  <label>Total</label>
+                  <input type="number" class="form-control" :value="product.qty * product.rate" readonly>
+                </div>
               </div>
             </div>
-
-            <!-- Add Product Button -->
-            <button class="btn btn-info btn-sm" @click="addProduct(index)">
-              <i class="fa fa-plus"></i> Add Product
-            </button>
-          </div>
-
-
             <!-- Add / Remove Bidders -->
             <div class="form-group col-md-12 d-flex justify-content-end mt-3">
               <button class="btn btn-info btn-sm" @click="addRow">
@@ -332,7 +290,7 @@
               <div class="modal-body">
                 <!-- Loop over each bid -->
                 <div v-for="(bid, bIndex) in groupedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
-                  <h5 class="text-warning">Bid #{{ bid.id }}</h5>
+                  <h5 class="text-warning">Bid #{{ bIndex + 1 }}</h5>
                   <div class="row p-3" style="background-color: #eaeff2;">
                     <div class="col-md-12"><h6><strong>Supplier:</strong> {{ bid.supplier?.name }}</h6></div>
                     <div class="col-md-4"><strong>Date:</strong> {{ new Date(bid.created_at).toLocaleString() }}</div>
@@ -379,7 +337,6 @@
             </div>
           </div>
         </div>
-        
         <AddSupplierModal></AddSupplierModal>
         <AddProductModal></AddProductModal>
       </div>
@@ -445,8 +402,7 @@ export default {
       {
         supplier_id: '',
         quotation_ref: '',
-        quotation_date: '',
-        trade_classification: '',
+        quotation_date: '', 
         advance_percent: '',
         after_delivery_percent: '',
         credit_days: '',
@@ -454,6 +410,7 @@ export default {
         delivery_charges: '',
         contact_person: '',
         terms: '',
+        total: '',
         products: [
           {
             product_id: '',
@@ -465,15 +422,25 @@ export default {
     ],
     };
   },
-  mounted() {
-    this.loadTinyMCE();
-    this.fetchBid_PRN();
-    const script = document.createElement('script');
-    script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
-    script.referrerPolicy = "origin";
-    document.head.appendChild(script);
-  },
-  methods: {
+    mounted() {
+      this.loadTinyMCE();
+      this.fetchBid_PRN();
+      const script = document.createElement('script');
+      script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
+      script.referrerPolicy = "origin";
+      document.head.appendChild(script);
+    },
+    computed: {
+      uniquePRNBids() {
+        const seen = new Set();
+        return this.bids.filter(bid => {
+          if (!bid.prn?.id || seen.has(bid.prn.id)) return false;
+          seen.add(bid.prn.id);
+          return true;
+        });
+      }
+    },
+   methods: {
     async fetchBid_PRN() {
       try {
         const response = await this.callApi('post', 'bid-summaries');
@@ -496,8 +463,7 @@ export default {
         id: Date.now(),
         supplier: '',
         quotation_ref: '',
-        quotation_date: '',
-        trade_classification: '',
+        quotation_date: '', 
         advance_percent: '',
         after_delivery_percent: '',
         credit_days: '',
@@ -516,66 +482,56 @@ export default {
     removeRow(index) {
       this.bidFormRows.splice(index, 1);
      },
-    addProduct(bidIndex) {
-      this.bidFormRows[bidIndex].products.push({
-        product_name: '',
-        rate: ''
-      });
-     },
-    removeProduct(bidIndex, productIndex) {
-      this.bidFormRows[bidIndex].products.splice(productIndex, 1);
-     },
-    async createBid() {
-      
-  const payload = {
-    prn_id: this.selectedPRN?.id,
-    mr_id : this.selectedPRN?.mr_id,
+    async createBid() {  
+      const payload = {
+        prn_id: this.selectedPRN?.id,
+        mr_id : this.selectedPRN?.mr_id,
 
-    suppliers: this.bidFormRows.map(row => ({
-      supplier_id: row.supplier_id,
-      quotation_ref: row.quotation_ref,
-      quotation_date: row.quotation_date,
-      trade_classification: row.trade_classification,
-      advance_percent: row.advance_percent,
-      after_delivery_percent: row.after_delivery_percent,
-      credit_days: row.credit_days,
-      discount_amount: row.discount_amount,
-      delivery_charges: row.delivery_charges,
-      contact_person: row.contact_person,
-      terms_condition: row.terms,
-      products: row.products.map(product => ({
-        product_id: product.product_id,
-        rate: product.rate,
-        quantity: product.quantity || 1
-      }))
-    }))
-  };
+        suppliers: this.bidFormRows.map(row => ({
+          supplier_id: row.supplier_id,
+          quotation_ref: row.quotation_ref,
+          quotation_date: row.quotation_date, 
+          advance_percent: row.advance_percent,
+          after_delivery_percent: row.after_delivery_percent,
+          credit_days: row.credit_days,
+          discount_amount: row.discount_amount,
+          delivery_charges: row.delivery_charges,
+          contact_person: row.contact_person,
+          terms_condition: row.terms,
+          products: row.products.map(product => ({
+            product_id: product.product_id,
+            rate: product.rate,
+            quantity: product.qty
+          }))
+        }))
+      };
 
-  console.log("Payload being submitted:", payload); // Check the payload
+      console.log("Payload being submitted:", payload); // Check the payload
 
-  try {
-    const response = await this.callApi('post', 'bid-summaries/store', payload);
+      try {
+        const response = await this.callApi('post', 'bid-summaries/store', payload);
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Success',
-      text: 'Bid Summary submitted successfully!'
-    });
-
-    this.clearForm();
-  } catch (error) {
-    console.error('Bid submission failed:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: error?.response?.data?.message || 'Submission failed.'
-    });
-  }
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Bid Summary submitted successfully!'
+        });
+        this.fetchBid_PRN();
+        this.clearForm();
+      } catch (error) {
+        console.error('Bid submission failed:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.response?.data?.message || 'Submission failed.'
+        });
+      }
      },
     openBidModal(prn) {
-    this.selectedPRN = prn; // ✅ Set selected PRN before opening modal
-    this.clearForm();       // Clears bid form rows only
-     },
+        this.selectedPRN = prn;
+        this.clearForm(); // Clears existing form rows
+        this.fetchPRNProducts(prn); // Fetch products for this PRN
+      },
     clearForm() {
         this.validationErrors = [];
         this.success = '';
@@ -584,8 +540,7 @@ export default {
             id: Date.now(),
             supplier_id: '',
             quotation_ref: '',
-            quotation_date: '',
-            trade_classification: '',
+            quotation_date: '', 
             advance_percent: '',
             after_delivery_percent: '',
             credit_days: '',
@@ -631,6 +586,44 @@ export default {
       const subtotal = this.getSubtotal(bid.details);
       const tax = parseFloat(this.calculateTax(bid));
       return (subtotal + tax).toFixed(2);
+     },
+    async fetchPRNProducts(prn) {
+      try {
+        const response = await this.callApi('post', 'prn/fetch-prn-products', { prn_id: prn.id });
+
+        const productsFromPRN = response.data.products;
+
+        this.bidFormRows = [
+          {
+            supplier_id: '',
+            quotation_ref: '',
+            quotation_date: '', 
+            advance_percent: '',
+            after_delivery_percent: '',
+            credit_days: '',
+            discount_amount: '',
+            delivery_charges: '',
+            contact_person: '',
+            terms: '',
+            products: productsFromPRN.map(p => ({
+              product_id: p.id,
+              name: p.name,
+              qty: p.qty,
+              rate: '',
+              total: 0,
+            })),
+          }
+        ];
+      } catch (error) {
+        console.error("Error fetching PRN products:", error);
+      }
+     },
+    getProductName(productId) {
+      const prod = this.products.find(p => p.id === productId);
+      return prod ? prod.name : 'Unknown';
+    },
+    updateTotal(item, product) {
+        product.total = product.qty * product.rate;
      },
     loadTinyMCE() {
       const script = document.createElement('script');
