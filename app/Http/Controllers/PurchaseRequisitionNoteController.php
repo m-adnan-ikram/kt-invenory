@@ -83,6 +83,33 @@ class PurchaseRequisitionNoteController extends Controller
             ], 500);
         }
     }
-
+    public function fetchPrnProducts(Request $request)
+    {
+        $request->validate([
+            'prn_id' => 'required|integer',
+        ]);
     
+        // Fetch all PRN detail rows that belong to the given PRN ID, including the product relation
+        $prnDetails = PurchaseRequisitionNoteDetail::with('product')
+            ->where('prn_id', $request->prn_id)
+            ->get();
+    
+        if ($prnDetails->isEmpty()) {
+            return response()->json(['message' => 'No products found for this PRN.'], 404);
+        }
+    
+        // Map and return the product data with quantity
+        $products = $prnDetails->map(function ($detail) {
+            return [
+                'id'  => $detail->product?->id,
+                'name' => $detail->product?->name,
+                'qty'  => $detail->qty,
+            ];
+        });
+    
+        return response()->json([
+            'products' => $products
+        ]);
+    }
+
 }

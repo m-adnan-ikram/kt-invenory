@@ -21,12 +21,16 @@ class BidSummariesController extends Controller
             'details.product'
         ])->where('status', 1)->latest()->get();
     
-         $bids = BidSummary::with([
+        $bids = BidSummary::with([
             'supplier',
             'prn.details.product',
-            'prn.mr.requestedByUser', 
-        ])->latest()->get();
-    
+            'prn.mr.requestedByUser',
+        ])
+        ->latest()
+        ->get()
+        ->unique('prn_id')
+        ->values(); // ensures reindexing        
+
         $suppliers = Supplier::all();
         $products  = Product::all();
     
@@ -39,123 +43,106 @@ class BidSummariesController extends Controller
             'products'  => $products,
         ]);
     }
-    
     public function store(Request $request)
     { 
-        $request->validate([
-            'prn_id'    => 'required|exists:purchase_requisition_notes,id',
-            'mr_id'     => 'required|exists:material_requests,id',
-            'suppliers' => 'required|array|min:1',
-            'suppliers.*.supplier_id'          => 'required|exists:suppliers,id',
-            'suppliers.*.quotation_ref'        => 'required|string',
-            'suppliers.*.quotation_date'       => 'required|date',
-            'suppliers.*.trade_classification' => 'nullable|string',
-            'suppliers.*.advance_percent'      => 'required|numeric',
-            'suppliers.*.after_delivery_percent' => 'required|numeric',
-            'suppliers.*.credit_days'          => 'required|integer',
-            'suppliers.*.discount_amount'      => 'required|numeric',
-            'suppliers.*.delivery_charges'     => 'required|numeric',
-            'suppliers.*.contact_person'       => 'required|string',
-            'suppliers.*.terms_condition'      => 'required|string',
-            'suppliers.*.products'             => 'required|array|min:1',
-            'suppliers.*.products.*.product_id'=> 'required|exists:products,id',
-            'suppliers.*.products.*.rate'      => 'required|numeric',
-            'suppliers.*.products.*.quantity'  => 'required|numeric',
-        ]);
         DB::beginTransaction();
         try {
-            foreach ($request->suppliers as $supplier) {
+            foreach ($request->suppliers ?? [] as $supplier) {
+                $products = $supplier['products'] ?? [];
+                $totalAmount = collect($products)->sum(fn($p) => ($p['rate'] ?? 0) * ($p['quantity'] ?? 0));
+
                 $summary = BidSummary::create([
-                    'prn_id' => $request->prn_id,
-                    'mr_id'  => $request->mr_id,
-                    'supplier_id'  => $supplier['supplier_id'],
-                    'total_amount' => collect($supplier['products'])->sum(fn($p) => $p['rate'] * $p['quantity']),
-                    'total'        => collect($supplier['products'])->sum(fn($p) => $p['rate'] * $p['quantity']),
-                    'tax'          => 0, // compute if needed
-                    'advance'      => $supplier['advance_percent'],
-                    'after_delivery' => $supplier['after_delivery_percent'],
-                    'credit_days'  => $supplier['credit_days'],
-                    'discount'     => $supplier['discount_amount'],
-                    'delivery_charges' => $supplier['delivery_charges'],
-                    'contact_person'   => $supplier['contact_person'],
-                    'terms_condition'  => $supplier['terms_condition'],
-                    'quotation_ref'    => $supplier['quotation_ref'],
-                    'quotation_date'   => $supplier['quotation_date'],
-                    'status'           => 1,
+                    'prn_id'            => $request->prn_id ?? null,
+                    'mr_id'             => $request->mr_id ?? null,
+                    'supplier_id'       => $supplier['supplier_id'] ?? null,
+                    'total_amount'      => $totalAmount,
+                    'total'             => $totalAmount,
+                    'tax'               => 0,
+                    'advance'           => $supplier['advance_percent'] ?? 0,
+                    'after_delivery'    => $supplier['after_delivery_percent'] ?? 0,
+                    'credit_days'       => $supplier['credit_days'] ?? 0,
+                    'discount'          => $supplier['discount_amount'] ?? 0,
+                    'delivery_charges'  => $supplier['delivery_charges'] ?? 0,
+                    'contact_person'    => $supplier['contact_person'] ?? '',
+                    'terms_condition'   => $supplier['terms_condition'] ?? '',
+                    'quotation_ref'     => $supplier['quotation_ref'] ?? '',
+                    'quotation_date'    => $supplier['quotation_date'] ?? now(),
+                    'status'            => 1,
                 ]);
-    
-                foreach ($supplier['products'] as $product) {
+
+                foreach ($products as $product) {
+                    $rate = $product['rate'] ?? 0;
+                    $quantity = $product['quantity'] ?? 0;
+                    $total = $rate * $quantity;
+
                     BidDetail::create([
-                        'bid_id'     => $summary->id,
-                        'product_id' => $product['product_id'],
-                        'qty'        => $product['quantity'],
-                        'rate'       => $product['rate'],
-                        'total'      => $product['rate'] * $product['quantity'],
-                        'discount'   => 0,
+                        'bid_id'           => $summary->id,
+                        'product_id'       => $product['product_id'] ?? null,
+                        'qty'              => $quantity,
+                        'rate'             => $rate,
+                        'total'            => $total,
+                        'discount'         => 0,
                         'delivery_charges' => 0,
-                        'tax'        => 0,
-                        'net_amount' => $product['rate'] * $product['quantity'],
+                        'tax'              => 0,
+                        'net_amount'       => $total,
                     ]);
                 }
             }
-    
+
+            if ($request->prn_id) {
+                PurchaseRequisitionNote::find($request->prn_id)?->update(['status' => 2]);
+            } 
             DB::commit();
-            $detail = PurchaseRequisitionNote::findOrFail($request->prn_id);
-            $detail->update([
-                'status'    => 2, 
-            ]);
             return response()->json(['message' => 'Bids submitted successfully.']);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Submission failed.', 'details' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Submission failed.',
+                'details' => $e->getMessage(),
+            ], 500);
         }
     }
+    // Compare bids function
+    public function compareBid(Request $request)
+    {
+        $prnId = $request->prn_id;
 
- // Compare bids function
-public function compareBid(Request $request)
-{
-    $prnId = $request->prn_id;
+        $bids = BidSummary::with([
+            'supplier',
+            'prn.mr.requestedByUser',
+            'details.product',
+            'details.supplier'
+        ])
+        ->where('prn_id', $prnId)
+        ->get();
 
-    $bids = BidSummary::with([
-        'supplier',
-        'prn.mr.requestedByUser',
-        'details.product',
-        'details.supplier'
-    ])
-    ->where('prn_id', $prnId)
-    ->get();
-
-    return response()->json([
-        'success' => true,
-        'bids'    => $bids
-    ]);
-}
-
-// Show bids for PRN
-public function show(Request $request)
-{
-    $prnId = $request->prn_id;
-
-    $bids = BidSummary::with([
-        'supplier',
-        'prn.mr.requestedByUser',
-        'details.product',
-        'details.supplier'
-    ])
-    ->where('prn_id', $prnId)
-    ->get();
-
-    $grouped = [];
-    foreach ($bids as $bid) {
-        $grouped[] = $bid;
+        return response()->json([
+            'success' => true,
+            'bids'    => $bids
+        ]);
     }
+    // Show bids for PRN
+    public function show(Request $request)
+    {
+        $prnId = $request->prn_id;
+        $bids = BidSummary::with([
+            'supplier',
+            'prn.mr.requestedByUser',
+            'details.product',
+            'details.supplier'
+        ])
+        ->where('prn_id', $prnId)
+        ->get();
 
-    return response()->json([
-        'success'     => true,
-        'bids_by_prn' => $grouped
-    ]);
-}
+        $grouped = [];
+        foreach ($bids as $bid) {
+            $grouped[] = $bid;
+        }
 
-        
-    
+        return response()->json([
+            'success'     => true,
+            'bids_by_prn' => $grouped
+        ]);
+    }
 }

@@ -18,5 +18,5 @@ class PurchaseRequisitionNote extends Model
     {
         return $this->belongsTo(MaterialRequest::class);
     }
-    
+
 }

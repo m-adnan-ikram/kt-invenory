@@ -10,14 +10,11 @@ use App\Http\Controllers\PurchaseRequisitionNoteController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->prefix('web/v1/allRequests')->group(function () {
-    Route::post('/', [ProductController::class, 'allRequests']);
-});
+
 // POs
 Route::middleware(['auth:sanctum'])->prefix('web/v1/pos')->group(function () {
     Route::post('/', [PurchaseOrderController::class, 'index']);          
-    Route::post('store', [PurchaseOrderController::class, 'store']);       
-    Route::post('/show', [PurchaseOrderController::class, 'show']);
+    Route::post('store', [PurchaseOrderController::class, 'store']);  
 });
 // Bid Summaries
 Route::middleware(['auth:sanctum'])->prefix('web/v1/bid-summaries')->group(function () {
@@ -31,6 +28,7 @@ Route::middleware(['auth:sanctum'])->prefix('web/v1/prn')->group(function () {
     Route::post('/', [PurchaseRequisitionNoteController::class, 'index']);        
     Route::post('store', [PurchaseRequisitionNoteController::class, 'store']);      
     Route::post('viewPRN', [PurchaseRequisitionNoteController::class, 'view']);  
+    Route::post('fetch-prn-products', [PurchaseRequisitionNoteController::class, 'fetchPrnProducts']);
 });
 // MR
 Route::middleware(['auth:sanctum'])->prefix('web/v1/mr')->group(function () {
@@ -68,4 +66,8 @@ Route::middleware(['auth:sanctum'])->prefix('web/v1/supplier')->group(function (
     Route::post('store', [SupplierController::class, 'store']);    
     Route::post('update', [SupplierController::class, 'update']);  
     Route::post('/delete', [SupplierController::class, 'delete']);  
+});
+// navbar requests count
+Route::middleware(['auth:sanctum'])->prefix('web/v1/allRequests')->group(function () {
+    Route::post('/', [ProductController::class, 'allRequests']);
 });
