@@ -28,6 +28,7 @@ class CreateBidSummariesTable extends Migration
             $table->decimal('discount', 10, 2);
             $table->decimal('delivery_charges', 10, 2);
             $table->string('contact_person');
+            $table->string('contact_person_contact');
             $table->text('terms_condition');
             $table->string('quotation_date'); 
             $table->string('quotation_ref');  

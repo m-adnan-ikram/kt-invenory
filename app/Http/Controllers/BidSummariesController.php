@@ -43,66 +43,85 @@ class BidSummariesController extends Controller
             'products'  => $products,
         ]);
     }
-    public function store(Request $request)
+   public function store(Request $request)
     { 
         DB::beginTransaction();
         try {
             foreach ($request->suppliers ?? [] as $supplier) {
                 $products = $supplier['products'] ?? [];
-                $totalAmount = collect($products)->sum(fn($p) => ($p['rate'] ?? 0) * ($p['quantity'] ?? 0));
-
-                $summary = BidSummary::create([
-                    'prn_id'            => $request->prn_id ?? null,
-                    'mr_id'             => $request->mr_id ?? null,
-                    'supplier_id'       => $supplier['supplier_id'] ?? null,
-                    'total_amount'      => $totalAmount,
-                    'total'             => $totalAmount,
-                    'tax'               => 0,
-                    'advance'           => $supplier['advance_percent'] ?? 0,
-                    'after_delivery'    => $supplier['after_delivery_percent'] ?? 0,
-                    'credit_days'       => $supplier['credit_days'] ?? 0,
-                    'discount'          => $supplier['discount_amount'] ?? 0,
-                    'delivery_charges'  => $supplier['delivery_charges'] ?? 0,
-                    'contact_person'    => $supplier['contact_person'] ?? '',
-                    'terms_condition'   => $supplier['terms_condition'] ?? '',
-                    'quotation_ref'     => $supplier['quotation_ref'] ?? '',
-                    'quotation_date'    => $supplier['quotation_date'] ?? now(),
-                    'status'            => 1,
-                ]);
-
-                foreach ($products as $product) {
+                // Calculate total (subtotal) from all products
+                $productTotals = collect($products)->map(function ($product) {
                     $rate = $product['rate'] ?? 0;
-                    $quantity = $product['quantity'] ?? 0;
-                    $total = $rate * $quantity;
-
+                    $qty  = $product['quantity'] ?? 0;
+                    return $rate * $qty;
+                });
+                $subTotal = $productTotals->sum();
+                // Supplier-level totals
+                $totalTax      = (float) ($supplier['tax'] ?? 0);
+                $totalDiscount = (float) ($supplier['discount'] ?? 0);
+                $totalDelivery = (float) ($supplier['delivery_charges'] ?? 0);
+                $grandTotal    = $subTotal + $totalTax + $totalDelivery - $totalDiscount;
+                $advancePercent       = $supplier['advance_percent'] ?? 0;
+                $afterDeliveryPercent = $supplier['after_delivery_percent'] ?? 0;
+                $advanceAmount        = ($advancePercent / 100) * $grandTotal;
+                $afterDeliveryAmount  = ($afterDeliveryPercent / 100) * $grandTotal;
+                // Create Bid Summary
+                $summary = BidSummary::create([
+                    'prn_id'                  => $request->prn_id,
+                    'mr_id'                   => $request->mr_id,
+                    'supplier_id'             => $supplier['supplier_id'],
+                    'total_amount'            => $subTotal,
+                    'total'                   => $grandTotal,
+                    'tax'                     => $totalTax,
+                    'advance'                 => $advanceAmount,
+                    'after_delivery'          => $afterDeliveryAmount,
+                    'credit_days'             => $supplier['credit_days'],
+                    'discount'                => $totalDiscount,
+                    'delivery_charges'        => $totalDelivery,
+                    'contact_person'          => $supplier['contact_person'],
+                    'contact_person_contact'  => $supplier['contact_person_contact'],
+                    'terms_condition'         => $supplier['terms_condition'],
+                    'quotation_ref'           => $supplier['quotation_ref'],
+                    'quotation_date'          => $supplier['quotation_date'] ?? now(),
+                    'status'                  => 1,
+                ]);
+                // Now distribute discount, tax, and delivery proportionally per product
+                foreach ($products as $product) {
+                    $rate  = (float) ($product['rate'] ?? 0);
+                    $qty   = (float) ($product['quantity'] ?? 0);
+                    $total = $rate * $qty;
+                    $ratio = $subTotal > 0 ? $total / $subTotal : 0;
+                    $discountShare = $ratio * $totalDiscount;
+                    $taxShare      = $ratio * $totalTax;
+                    $deliveryShare = $ratio * $totalDelivery;
+                    $netAmount     = $total + $taxShare + $deliveryShare - $discountShare;
                     BidDetail::create([
                         'bid_id'           => $summary->id,
-                        'product_id'       => $product['product_id'] ?? null,
-                        'qty'              => $quantity,
+                        'product_id'       => $product['product_id'],
+                        'qty'              => $qty,
                         'rate'             => $rate,
                         'total'            => $total,
-                        'discount'         => 0,
-                        'delivery_charges' => 0,
-                        'tax'              => 0,
-                        'net_amount'       => $total,
+                        'discount'         => round($discountShare, 2),
+                        'delivery_charges' => round($deliveryShare, 2),
+                        'tax'              => round($taxShare, 2),
+                        'net_amount'       => round($netAmount, 2),
                     ]);
                 }
             }
-
             if ($request->prn_id) {
                 PurchaseRequisitionNote::find($request->prn_id)?->update(['status' => 2]);
-            } 
+            }
             DB::commit();
             return response()->json(['message' => 'Bids submitted successfully.']);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Submission failed.',
-                'details' => $e->getMessage(),
-            ], 500);
-        }
+         } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'Submission failed.',
+                    'details' => $e->getMessage(),
+                ], 500);
+          }
     }
+
     // Compare bids function
     public function compareBid(Request $request)
     {
