@@ -166,34 +166,79 @@
             </div>
             <div class="modal-body">
               <div class="row">
-                <div
-                  class="col-md-6 mb-3"
-                  v-for="(bid, bIndex) in selectedBids"
-                  :key="bIndex"
-                >
-                  <div
-                    class="card border shadow-sm"
-                    v-for="(detail, dIndex) in bid.details"
-                    :key="'d-' + bIndex + '-' + dIndex"
-                  >
-                    <div class="card-body">
-                      <div class="mb-2">
-                        <div class="text-right">
-                          <input
-                            type="checkbox"
-                            class="form-check-input me-2"
-                            v-model="selectedDetails"
-                            :value="detail.id"
-                          />
-                        </div>
-                        <div>
-                          <h6>Supplier : <strong>{{ bid.supplier?.name || 'N/A' }}</strong></h6>
-                        </div>
-                      </div>
-                      <div class="text-muted">
-                        <div><strong>Product:</strong> {{ detail.product?.name || 'N/A' }}</div>
-                        <div><strong>Rate :</strong> <span class="badge bg-primary text-white mt-1">{{ detail.rate }} </span></div>
-                      </div>
+                <div class="col-md-12">
+                  <div class="card shadow-sm border">
+                    <div class="table-responsive">
+                      <table class="table table-bordered table-striped align-middle text-center mb-0">
+                        <thead class="table-secondary">
+                          <tr>
+                            <th class="align-middle">#</th>
+                            <th class="align-middle">Product</th>
+                            <th
+                              v-for="(supplier, sIndex) in selectedSuppliers"
+                              :key="'sup-' + sIndex"
+                              class="text-capitalize"
+                            >
+                              {{ supplier.name }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(product, pIndex) in uniqueProducts"
+                            :key="'prod-' + pIndex"
+                          >
+                            <td>{{ pIndex + 1 }}</td>
+                            <td class="fw-semibold text-start ps-3">{{ product }}</td>
+                            <td
+                              v-for="(supplier, sIndex) in selectedSuppliers"
+                              :key="'cell-' + pIndex + '-' + sIndex"
+                            >
+                              <div v-if="getRate(product, supplier.id)">
+                                <span class="mb-1 fw-semibold mr-2">
+                                  {{ getRate(product, supplier.id).toLocaleString() }}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  class="checkbox-custom"
+                                  v-model="selectedDetails"
+                                  :value="getDetailId(product, supplier.id)"
+                                />
+                              </div>
+                              <span v-else class="text-muted">—</span>
+                            </td>
+                          </tr>
+                           
+                          <tr>
+                            <th>Delivery Charges</th>
+                            <td></td>
+                            <td v-for="supplier in selectedSuppliers" :key="'delivery-charges-' + supplier.id">
+                              {{ getField(supplier.id, 'delivery_charges') || '—' }}
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Tax</th>
+                            <td></td>
+                            <td v-for="supplier in selectedSuppliers" :key="'tax-' + supplier.id">
+                              {{ getField(supplier.id, 'tax') || '—' }}
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Discount</th>
+                            <td></td>
+                            <td v-for="supplier in selectedSuppliers" :key="'discount-' + supplier.id">
+                              {{ getField(supplier.id, 'discount') || '—' }}
+                            </td>
+                          </tr>
+                          <tr>
+                            <th>Grand Total</th>
+                            <td></td>
+                            <td v-for="supplier in selectedSuppliers" :key="'total-' + supplier.id">
+                              <h6>{{ getField(supplier.id, 'total_amount')?.toLocaleString() || '—' }}</h6>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -278,13 +323,23 @@
       Add,  
     },
     data() {
-      return {
+      return { 
+        selectedMR: null,
+        extraFields: [
+          'Terms & Conditions',
+          'Advance %',
+          'After Delivery %',
+          'Credit Days',
+          'Delivery Charges',
+          'Tax',
+          'Discount',
+          'Grand Total'
+        ],
         groupedBids: [],
         showAddPOModal: false,      // Add this
         showViewBidModal: false,    // Add this
         selectedBids: [], 
         selectedDetails: [],
-        showAddPOModal: false,
         isApprovalMode: false,
         decisionMap: {}, // Keeps track of approve/reject state for each bidder
         activeTab: 'po',
@@ -337,14 +392,31 @@
       this.fetchBid_PO();
     },
     computed: {
-        uniquePRNBids() {
+    uniquePRNBids() {
           const seen = new Set();
           return this.bids.filter(bid => {
             if (!bid.prn?.id || seen.has(bid.prn.id)) return false;
             seen.add(bid.prn.id);
             return true;
           });
-        }
+      },
+    selectedSuppliers() {
+      return this.selectedBids.map(bid => ({
+        id: bid.supplier?.id,
+        name: bid.supplier?.name
+      }))
+     },
+    uniqueProducts() {
+      const products = new Set()
+      this.selectedBids.forEach(bid => {
+        bid.details.forEach(detail => {
+          if (detail.product?.name) {
+            products.add(detail.product.name)
+          }
+        })
+      })
+      return Array.from(products)
+     },
     },
     methods: {
       async fetchBid_PO() {
@@ -379,30 +451,42 @@
         };
       },
       async openAddPOModal(prnId) {
-        this.showAddPOModal = false;
-        this.selectedBids = []; // Clear the previous bids before fetching new ones
-
-        try {
-          const res = await this.callApi('post', 'bid-summaries/compareBids', { prn_id: prnId });
-
-          if (res.data.success && res.data.bids.length > 0) {
-            this.selectedBids = res.data.bids; // Assign fresh bid data
-            this.selectedMR = res.data.bids[0]?.prn?.mr || null;
-            this.validationErrors = {};
-            this.success = '';
-            this.showAddPOModal = true;
-
-            this.$nextTick(() => {
-              $('#BidModal').modal('show');
-            });
-          } else {
-            // ✅ Show alert if no bids are found
-            window.alert("No bids found for this PRN.");
-          }
-        } catch (e) {
-          console.error("Error loading bids for PRN:", e);
-          this.validationErrors = e.response?.data?.errors || {};
+      this.showAddPOModal = false
+      this.selectedBids = []
+      try {
+        const res = await this.callApi('post', 'bid-summaries/compareBids', { prn_id: prnId })
+        if (res.data.success && res.data.bids.length > 0) {
+          this.selectedBids = res.data.bids
+          this.selectedMR = res.data.bids[0]?.prn?.mr || null
+          this.validationErrors = {}
+          this.success = ''
+          this.showAddPOModal = true
+          this.$nextTick(() => {
+            $('#BidModal').modal('show')
+          })
+        } else {
+          window.alert("No bids found for this PRN.")
         }
+      } catch (e) {
+        console.error("Error loading bids for PRN:", e)
+        this.validationErrors = e.response?.data?.errors || {}
+      }
+      },
+      getRate(productName, supplierId) {
+        const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
+        if (!bid) return null
+        const detail = bid.details.find(d => d.product?.name === productName)
+        return detail?.rate || null
+      },
+      getDetailId(productName, supplierId) {
+        const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
+        if (!bid) return null
+        const detail = bid.details.find(d => d.product?.name === productName)
+        return detail?.id || null
+      },
+      getField(supplierId, field) {
+        const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
+        return bid?.[field] || null
       },
       async viewBidsByPRN(prnId) {
         const payload = { prn_id: prnId };
@@ -470,5 +554,4 @@
     }
   };
   </script>
-  
   

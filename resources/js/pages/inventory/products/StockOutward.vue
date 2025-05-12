@@ -64,7 +64,7 @@
         <Add :heading="'Add New Outward'" :errors="validationErrors" :success="success" :formID="formID">
            
             <div class="row" v-for="(item, index) in outWardFormRows" :key="item.id">
-                <div class="form-group col-md-4">
+            <div class="form-group col-md-4">
               <div class="d-flex justify-content-between">
                 <label>Select Product</label>
                 <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button>

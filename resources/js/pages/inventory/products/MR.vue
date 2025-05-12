@@ -80,10 +80,13 @@
             </div>
             <div class="modal-body">
               <div class="row">
-                <!-- Product select -->
-                <div class="form-group col-md-3">
-                  <label>Select Product</label>
-                  <select v-model="singleProduct.product_id" class="form-control select2">
+                <!-- Product select --> 
+                <div class="form-group col-md-4">
+                  <div class="d-flex justify-content-between">
+                    <label>Select Product</label>
+                    <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button>
+                  </div>
+                  <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control select2">
                     <option value="">Select</option>
                     <option v-for="prod in products" :key="prod.id" :value="prod.id">{{ prod.name }}</option>
                   </select>
@@ -99,10 +102,10 @@
                   <textarea class="form-control" v-model="singleProduct.reason"></textarea>
                 </div>
                 <!-- Add Button -->
-                <div class="form-group col-md-2">
+                <div class="form-group col-md-1">
                   <label>Action</label>
                   <button class="btn btn-success btn-sm" @click="addProduct">
-                    <i class="fa fa-plus"></i> Add Product
+                    <i class="fa fa-plus"></i> Add
                   </button>
                 </div>
               </div>
@@ -156,76 +159,84 @@
       <div class="modal fade" id="viewMRModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
           <div class="modal-content" v-if="selectedMR">
-            <div class="modal-header">
+            <div class="modal-header border-bottom">
               <h5 class="modal-title">MR Details - MR-{{ selectedMR.id }}</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
             </div>
-            <div class="modal-body">
-              <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Product Name</th>
-                  <th>Qty</th>
-                  <th>Reason</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(detail, index) in selectedMR.details" :key="index">
-                  <td>{{ index + 1 }}</td>
-                  <td >
-                    {{ detail.product.name }}
-                  </td>
+            <div class="modal-body p-0">
+              <div class="table-responsive">
+                <table class="table table-striped table-bordered table-hover mb-0">
+                  <thead class="bg-light">
+                    <tr>
+                      <th class="text-center">#</th>
+                      <th>Product Name</th>
+                      <th>Qty</th>
+                      <th>Reason</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(detail, index) in selectedMR.details" :key="index">
+                      <td class="text-center">{{ index + 1 }}</td>
+                      <td v-if="editingIndex === index">
+                        <select v-model="editDetailData.product_id" class="form-control form-control-sm select2">
+                          <option v-for="prod in products" :key="prod.id" :value="prod.id">{{ prod.name }}</option>
+                        </select>
+                      </td>
+                      <td v-else>
+                        {{ detail.product.name }}
+                      </td>
+                      <td v-if="editingIndex === index">
+                        <input type="number" v-model="editDetailData.qty" class="form-control form-control-sm" />
+                      </td>
+                      <td v-else>
+                        {{ detail.qty }}
+                      </td>
 
-                  <td v-if="editingIndex === index">
-                    <input type="number" v-model="editDetailData.qty" class="form-control" />
-                  </td>
-                  <td v-else>
-                    {{ detail.qty }}
-                  </td>
+                      <td v-if="editingIndex === index">
+                        <input type="text" v-model="editDetailData.reason" class="form-control form-control-sm" />
+                      </td>
+                      <td v-else>
+                        {{ detail.reason }}
+                      </td>
+                      <td v-if="selectedMR.status == 1">
+                        <!-- If editing, show Save/Cancel -->
+                        <template v-if="editingIndex === index">
+                          <button class="btn btn-success btn-sm mx-1" @click="saveDetail(index)">Save</button>
+                          <button class="btn btn-secondary btn-sm" @click="cancelEdit()">Cancel</button>
+                        </template>
 
-                  <td v-if="editingIndex === index">
-                    <input type="text" v-model="editDetailData.reason" class="form-control" />
-                  </td>
-                  <td v-else>
-                    {{ detail.reason }}
-                  </td>
-
-                  <td>
-                    <!-- If editing, show Save/Cancel -->
-                    <template v-if="editingIndex === index">
-                      <button class="btn btn-success btn-sm mx-1" @click="saveDetail(index)">Save</button>
-                      <button class="btn btn-secondary btn-sm" @click="cancelEdit()">Cancel</button>
-                    </template>
-
-                    <!-- Otherwise, show Edit/Delete -->
-                    <template v-else>
-                      <button class="btn btn-primary btn-sm mx-1" @click="editDetail(detail, index)">Edit</button>
-                      <button class="btn btn-danger btn-sm" @click="deleteDetail(detail.id, index)">Delete</button>
-                    </template>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
+                        <!-- Otherwise, show Edit/Delete -->
+                        <template v-else>
+                          <button class="btn btn-primary btn-sm mx-1" @click="editDetail(detail, index)">Edit</button>
+                          <button class="btn btn-danger btn-sm" @click="deleteDetail(detail.id, index)">Delete</button>
+                        </template>
+                      </td>
+                      <td v-else></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer bg-light border-top">
               <button class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
       </div>
-
-
+      <AddProductModal></AddProductModal>
     </div>
   </section>
 </template>
 
 <script>
 import Swal from 'sweetalert2';
+import AddProductModal from '../modal/addProductsModal.vue'; 
 
   export default {
+    components: { 
+      AddProductModal,
+    },
     data() {
       return {
         formID: 'addMRForm',
@@ -242,12 +253,16 @@ import Swal from 'sweetalert2';
     },
     mounted() {
       this.fetchMRs();
-
       // Attach modal close listener for Bootstrap 4
       const modalEl = document.getElementById('viewMRModal');
       if (modalEl) {
         $(modalEl).on('hidden.bs.modal', this.cancelEdit);
       }
+      this.$nextTick(function () {
+        $('.select2').select2().on('change', (e) => {
+          this.singleProduct.product_id = e.target.value;
+        });
+      })
     },
     beforeUnmount() {
       const modalEl = document.getElementById('viewMRModal');
@@ -306,8 +321,9 @@ import Swal from 'sweetalert2';
   this.editDetailData = {};
     },
     editDetail(detail, index) {
-        this.editingIndex = index;
-        this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
+      this.editingIndex = index;
+      this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
+      this.editDetailData.product_id = detail.product.id; // Ensure product_id is set
       },
     cancelEdit() {
         this.editingIndex = null;
@@ -369,14 +385,20 @@ import Swal from 'sweetalert2';
     async confirmDelete(id) {
       try {
         const confirm = await Swal.fire({
-          title: 'Are you sure?',
-          text: 'This will permanently delete this Material Request!',
-          icon: 'warning',
+          title: 'Delete Material Request',
+          text: 'Are you sure you want to permanently delete this Material Request?',
+          icon: 'error',
           showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#3085d6',
-          confirmButtonText: 'Yes, delete it!',
-          cancelButtonText: 'Cancel'
+          confirmButtonColor: '#dc3545',
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: 'Delete',
+          cancelButtonText: 'Cancel',
+          reverseButtons: true,
+          focusConfirm: false,
+          customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary'
+          }
         });
 
         if (confirm.isConfirmed) {

@@ -139,7 +139,7 @@
               <div class="modal-body">
                 <div v-if="selectedPRN && selectedPRN.details && selectedPRN.details.length">
                   <table class="table table-bordered table-hover">
-                    <thead class="thead-light">
+                    <thead class="thead-light bg-light border-top">
                       <tr>
                         <th>#</th>
                         <th>Product</th>
@@ -161,7 +161,7 @@
               </div>
 
               <!-- Modal Footer -->
-              <div class="modal-footer py-2">
+              <div class="modal-footer py-2 thead-light bg-light border-top">
                 <button class="btn btn-secondary" data-dismiss="modal">Close</button>
               </div>
 
@@ -175,91 +175,113 @@
           <h6 class="mb-3 font-weight-bold">Bidder {{ index + 1 }}</h6>
           <div class="row">
             <!-- Supplier -->
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-3">
             <div class="d-flex justify-content-between">
               <label>Select Supplier</label>
               <button type="button" class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addSupplier">
                 Add New
               </button>
             </div>
-            <!-- Supplier Dropdown -->
             <select v-model="item.supplier_id" class="form-control select2">
-              <option value="">Select Supplier</option>
-              <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
-                {{ sup.name }}
-              </option>
-            </select>
+                <option value="">Select Supplier</option>
+                <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">
+                  {{ sup.name }}
+                </option>
+              </select>
           </div>
+          <div class="form-group col-md-3">
+              <label>Contact Person</label>
+              <input type="text" class="form-control" v-model="item.contact_person">
+            </div>
+            <div class="form-group col-md-3">
+              <label>Contact Person Contact</label>
+              <input type="text" class="form-control" v-model="item.contact_person_contact">
+            </div> 
             <!-- Quotation Ref -->
-            <div class="form-group col-md-4">
-              <label>Quotation Ref <span class="text-danger">*</span></label>
+            <div class="form-group col-md-3">
+              <label>Quotation Ref</label>
               <input type="text" class="form-control" v-model="item.quotation_ref" placeholder="e.g. QUO-0012">
             </div>
             <!-- Quotation Date -->
-            <div class="form-group col-md-4">
-              <label>Quotation Date <span class="text-danger">*</span></label>
+            <div class="form-group col-md-3">
+              <label>Quotation Date</label>
               <input type="date" class="form-control" v-model="item.quotation_date">
             </div>
-             
-            <div class="form-group col-md-3">
-              <label>Advance (%)</label>
-              <input type="number" class="form-control" v-model="item.advance_percent">
-            </div>
-            <div class="form-group col-md-3">
-              <label>After Delivery (%)</label>
-              <input type="number" class="form-control" v-model="item.after_delivery_percent">
-            </div>
+            <!-- Credit Days -->
             <div class="form-group col-md-3">
               <label>Credit Days</label>
               <input type="number" class="form-control" v-model="item.credit_days">
             </div>
-            <div class="form-group col-md-3">
-              <label>Discount (Amount)</label>
-              <input type="text" class="form-control" v-model="item.discount_amount">
+            <!-- Advance -->
+            <div class="form-group col-md-3"> 
+                <label >Advance (%)</label> 
+                <input type="number" class="form-control " v-model="item.advance_percent">
             </div>
-            <div class="form-group col-md-3">
-              <label>Delivery Charges</label>
-              <input type="text" class="form-control" v-model="item.delivery_charges">
-            </div>
-            <div class="form-group col-md-3">
-              <label>Contact Person</label>
-              <input type="text" class="form-control" v-model="item.contact_person">
-            </div>
-            <!-- Terms -->
+            <!-- After Delivery -->
+              <div class="form-group col-md-3"> 
+                <label >After Delivery (%)</label>  
+                <input type="number" class="form-control" v-model="item.after_delivery_percent">
+              </div> 
+              <!-- Terms -->
             <div class="form-group col-md-12">
               <label>Terms & Conditions</label>
-              <textarea class="form-control" v-model="item.terms" rows="3" placeholder="Mention payment or delivery terms here..."></textarea>
+              <textarea class="form-control" v-model="item.terms" rows="3" placeholder="..."></textarea>
             </div> 
-            <!-- Products Quoted -->
-            <div class="col-md-12 mt-3">
+          <!-- Products Quoted -->
+          <div class="col-md-12">
               <h6 class="font-weight-bold">Products Quoted</h6>
-              <div v-for="(product, pIndex) in item.products" :key="pIndex" class="row mb-2">
+              <div v-for="(product, pIndex) in item.products" :key="pIndex" class="row">
                 
                 <!-- Product Dropdown (read-only display instead of select) -->
                 <div class="form-group col-md-3">
                   <label>Product</label>
                   <input type="text" class="form-control" :value="getProductName(product.product_id)" readonly>
                 </div>
-
                 <!-- Qty Display -->
                 <div class="form-group col-md-2">
-                  <label>Qty</label>
-                  <input type="number" class="form-control" v-model="product.qty" readonly>
+                  <label>Qty</label> 
+                  <input type="number" class="form-control" v-model="product.qty" readonly @input="updateTotal(item, product)">
                 </div>
-
                 <!-- Rate Input -->
                 <div class="form-group col-md-3">
                   <label>Rate</label>
                   <input type="number" class="form-control" v-model.number="product.rate" @input="updateTotal(item, product)">
                 </div>
-
                 <!-- Total (auto-calculated) -->
                 <div class="form-group col-md-3">
                   <label>Total</label>
                   <input type="number" class="form-control" :value="product.qty * product.rate" readonly>
                 </div>
               </div>
+            </div> 
+            
+            <div class="col-md-6 ml-auto">
+              <div class="form-group col-md-12">
+                <h6>Summary</h6>
+                <hr>
+              </div>
+              <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+              <label class="w-50"><h6>Sub Total</h6></label>
+              <h5 id="subTotal" class="text-right w-50">{{ item.sub_total }} PKR</h5> 
             </div>
+            <div class="form-group col-md-12 d-flex p-0 m-0">
+              <label class="w-25">Delivery Charges</label>
+              <input type="text" class="form-control w-75" v-model="item.delivery_charges" @input="calculateGrandTotal(item)">
+            </div>
+            <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+              <label class="w-25">Tax</label>
+              <input type="text" class="form-control w-75" v-model="item.tax" @input="calculateGrandTotal(item)">
+            </div>
+            
+            <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+              <label class="w-25">Discount (Amount)</label>
+              <input type="text" class="form-control w-75" v-model="item.discount" @input="calculateGrandTotal(item)">
+            </div>
+            <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+              <label class="w-50"><h6>Grand Total</h6></label>
+              <h5 id="grandTotal" class="text-right w-50">{{ item.grand_total }} PKR</h5>
+            </div>
+            </div> 
             <!-- Add / Remove Bidders -->
             <div class="form-group col-md-12 d-flex justify-content-end mt-3">
               <button class="btn btn-info btn-sm" @click="addRow">
@@ -289,14 +311,34 @@
               </div>
               <div class="modal-body">
                 <!-- Loop over each bid -->
-                <div v-for="(bid, bIndex) in groupedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
-                  <h5 class="text-warning">Bid #{{ bIndex + 1 }}</h5>
+                <div v-for="(item, bIndex) in groupedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
+                  <h5 class="text-warning d-flex justify-content-between">
+                      Bid #{{ bIndex + 1 }}
+                      <span>
+                          <template v-if="item.isEditing">
+                            <button class="btn btn-sm btn-secondary mr-2" @click="item.isEditing = false">
+                              <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button class="btn btn-sm btn-success mr-2" @click="updateBid(item)">
+                              <i class="fas fa-save"></i> Update
+                            </button>
+                          </template>
+                          <template v-else>
+                            <button class="btn btn-sm btn-primary mr-2" @click="item.isEditing = true">
+                              <i class="fas fa-edit"></i> Edit
+                            </button>
+                          </template>
+                          <button class="btn btn-sm btn-danger" @click="deleteBid(item.id, bIndex)">
+                            <i class="fas fa-trash"></i> Delete
+                          </button>
+                        </span>
+                    </h5>
                   <div class="row p-3" style="background-color: #eaeff2;">
-                    <div class="col-md-12"><h6><strong>Supplier:</strong> {{ bid.supplier?.name }}</h6></div>
-                    <div class="col-md-4"><strong>Date:</strong> {{ new Date(bid.created_at).toLocaleString() }}</div>
-                    <div class="col-md-4"><strong>MR #:</strong> MR - {{ bid.prn?.mr_id || 'N/A' }}</div>
-                    <div class="col-md-4"><strong>PRN #:</strong> PRN - {{ bid.prn?.id || 'N/A' }}</div>
-                    <div class="col-md-12"><strong>Requested By:</strong> {{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</div>
+                    <div class="col-md-12"><h6><strong>Supplier:</strong> {{ item.supplier?.name }}</h6></div>
+                    <div class="col-md-4"><strong>Date:</strong> {{ new Date(item.created_at).toLocaleString() }}</div>
+                    <div class="col-md-4"><strong>MR #:</strong> MR - {{ item.prn?.mr_id || 'N/A' }}</div>
+                    <div class="col-md-4"><strong>PRN #:</strong> PRN - {{ item.prn?.id || 'N/A' }}</div>
+                    <div class="col-md-12"><strong>Requested By:</strong> {{ item.prn?.mr?.requested_by_user?.name || 'N/A' }}</div>
 
                     <table class="table table-bordered mt-2">
                       <thead class="thead-light">
@@ -309,25 +351,94 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="(detail, dIndex) in bid.details" :key="dIndex">
-                          <td>{{ dIndex + 1 }}</td>
-                          <td>{{ detail.product?.name || 'N/A' }}</td>
-                          <td>{{ detail.qty }}</td>
-                          <td>{{ detail.rate }}</td>
-                          <td>{{ detail.total }}</td>
-                        </tr>
+                        <tr v-for="(detail, dIndex) in item.details" :key="dIndex">
+                        <td>{{ dIndex + 1 }}</td>
+                        <td>{{ detail.product?.name || 'N/A' }}</td>
+                        <td>{{ detail.qty }}</td>
+                        <td v-if="item.isEditing">
+                          <input type="number" class="form-control" v-model.number="detail.rate" @input="updateTotal(item, detail)">
+                        </td>
+                        <td v-else>{{ detail.rate }}</td>
+                        <td>{{ detail.total }}</td>
+                      </tr>
                       </tbody>
                     </table>
+                    <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
+                    <div class="col-md-4 d-flex"><strong>Advance %:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.advance">
+                      </template>
+                      <template v-else>
+                        {{ item.advance }}
+                      </template>
+                    </div>
+                    <div class="col-md-4 d-flex"><strong>After Delivery %:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.after_delivery">
+                      </template>
+                      <template v-else>
+                        {{ item.after_delivery }}
+                      </template>
+                    </div> 
+                    <div class="col-md-4 d-flex"><strong>Credit Days:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.credit_days">
+                      </template>
+                      <template v-else>
+                        {{ item.credit_days }}
+                      </template>
+                    </div> 
+                    <div class="col-md-4 d-flex"><strong>Discount:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.discount" @input="updateTotal(item)">
+                      </template>
+                      <template v-else>
+                        {{ item.discount }}
+                      </template>
+                    </div>
 
-                    <div class="col-md-3"><strong>Subtotal:</strong> {{ getSubtotal(bid.details).toFixed(2) }}</div>
-                    <div class="col-md-3"><strong>Advance %:</strong> {{ bid.advance }}%</div>
-                    <div class="col-md-3"><strong>After Delivery %:</strong> {{ bid.after_delivery }}%</div>
-                    <div class="col-md-3"><strong>Credit Days:</strong> {{ bid.credit_days }}</div>
-                    <div class="col-md-3"><strong>Discount:</strong> {{ bid.discount }}</div>
-                    <div class="col-md-3"><strong>Delivery Charges:</strong> {{ bid.delivery_charges }}</div>
-                    <div class="col-md-12"><strong>Contact Person:</strong> {{ bid.contact_person }}</div>
-                    <div class="col-md-12"><strong>Terms & Conditions:</strong><br>{{ bid.terms_condition }}</div>
-                    <div class="col-md-3 ml-auto mt-2"><h6><strong>Grand Total:</strong> {{ calculateGrandTotal(bid) }}</h6></div>
+                    <div class="col-md-4 d-flex"><strong>Delivery Charges:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.delivery_charges" @input="updateTotal(item)">
+                      </template>
+                      <template v-else>
+                        {{ item.delivery_charges }}
+                      </template>
+                    </div>
+
+                    <div class="col-md-4 d-flex"><strong>Tax:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.tax" @input="updateTotal(item)">
+                      </template>
+                      <template v-else>
+                        {{ item.tax }}
+                      </template>
+                    </div>
+                    <div class="col-md-4 d-flex"><strong>Contact Person:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.contact_person">
+                      </template>
+                      <template v-else>
+                        {{ item.contact_person }}
+                      </template>
+                    </div> 
+                    <div class="col-md-4 d-flex"><strong>Contact Person Contact:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.contact_person_contact">
+                      </template>
+                      <template v-else>
+                        {{ item.contact_person_contact }}
+                      </template>
+                    </div>
+                    <div class="col-md-4 d-flex"><strong>Terms & Conditions:</strong>
+                      <template v-if="item.isEditing">
+                        <input type="number" class="form-control ml-2" v-model.number="item.terms_condition">
+                      </template>
+                      <template v-else>
+                        {{ item.terms_condition }}
+                      </template>
+                    </div> 
+                    <div class="col-md-12 text-right mt-2"><h6><strong>Grand Total:</strong> {{ item.grand_total }}</h6></div>
                   </div>
                 </div>
               </div>
@@ -361,7 +472,24 @@ export default {
   },
   data() {
     return { 
-      groupedBids: [],
+      groupedBids: [
+      {
+        id: 1,
+        isEditing: false,
+        discount: 0,
+        delivery_charges: 0,
+        tax: 0,
+        sub_total: 0,
+        grand_total: 0,
+        products: [
+          {
+            product_id: '',
+            rate: '',
+            quantity: 1
+          }
+        ]
+      }
+      ],
       selectedBids: null, // this must match the modal binding
       activeTab: 'bid',
       prnID:'',
@@ -371,6 +499,7 @@ export default {
       products: [],
       suppliers: [],
       prnRequests: 0,
+      prnProducts: [],
       formID: 'bidFormModal', 
       validationErrors: [],
       success: '',
@@ -400,15 +529,21 @@ export default {
       bid_date: '',
       bidFormRows: [
       {
+        advance_amount: 0,
+        after_delivery_amount: 0,
+        sub_total: 0,
+        grand_total: 0,
         supplier_id: '',
         quotation_ref: '',
         quotation_date: '', 
         advance_percent: '',
         after_delivery_percent: '',
         credit_days: '',
-        discount_amount: '',
+        discount: '',
         delivery_charges: '',
         contact_person: '',
+        contact_person_contact: '',
+        tax:'',
         terms: '',
         total: '',
         products: [
@@ -421,7 +556,7 @@ export default {
       }
     ],
     };
-  },
+   },
     mounted() {
       this.loadTinyMCE();
       this.fetchBid_PRN();
@@ -429,6 +564,10 @@ export default {
       script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
       script.referrerPolicy = "origin";
       document.head.appendChild(script);
+      this.groupedBids.forEach(item => {
+        this.calculateSubTotal(item);
+        this.calculateGrandTotal(item);
+      });
     },
     computed: {
       uniquePRNBids() {
@@ -457,47 +596,28 @@ export default {
      },
     viewPRN(id) {
      this.selectedPRN = this.prns.find(prn => prn.id === id);
-     }, 
-    addRow() {
-      this.bidFormRows.push({
-        id: Date.now(),
-        supplier: '',
-        quotation_ref: '',
-        quotation_date: '', 
-        advance_percent: '',
-        after_delivery_percent: '',
-        credit_days: '',
-        discount_amount: '',
-        delivery_charges: '',
-        contact_person: '',
-        terms: '',
-        products: [
-          {
-            product_name: '',
-            rate: ''
-          }
-        ]
-      });
-     },
-    removeRow(index) {
-      this.bidFormRows.splice(index, 1);
      },
     async createBid() {  
       const payload = {
         prn_id: this.selectedPRN?.id,
         mr_id : this.selectedPRN?.mr_id,
-
         suppliers: this.bidFormRows.map(row => ({
           supplier_id: row.supplier_id,
           quotation_ref: row.quotation_ref,
           quotation_date: row.quotation_date, 
           advance_percent: row.advance_percent,
+          advance_amount: row.advance_amount,
           after_delivery_percent: row.after_delivery_percent,
+          after_delivery_amount: row.after_delivery_amount,
           credit_days: row.credit_days,
-          discount_amount: row.discount_amount,
+          discount: row.discount,
           delivery_charges: row.delivery_charges,
           contact_person: row.contact_person,
+          contact_person_contact: row.contact_person_contact,
           terms_condition: row.terms,
+          tax: row.tax,
+          sub_total: row.sub_total,
+          grand_total: row.grand_total,
           products: row.products.map(product => ({
             product_id: product.product_id,
             rate: product.rate,
@@ -505,12 +625,9 @@ export default {
           }))
         }))
       };
-
       console.log("Payload being submitted:", payload); // Check the payload
-
       try {
         const response = await this.callApi('post', 'bid-summaries/store', payload);
-
         Swal.fire({
           icon: 'success',
           title: 'Success',
@@ -526,11 +643,90 @@ export default {
           text: error?.response?.data?.message || 'Submission failed.'
         });
       }
+     }, 
+    addRow() {
+        if (!this.prnProducts || !this.prnProducts.length) {
+          alert("Please select a PRN first to load products.");
+          return;
+        }
+        this.bidFormRows.push({
+          id: Date.now(),
+          advance_amount: 0,
+          after_delivery_amount: 0,
+          sub_total: 0,
+          grand_total: 0,
+          supplier_id: '',
+          quotation_ref: '',
+          quotation_date: '',
+          advance_percent: '',
+          after_delivery_percent: '',
+          credit_days: '',
+          discount: '',
+          delivery_charges: '',
+          contact_person: '',
+          contact_person_contact: '',
+          terms: '',
+          tax: '',
+          products: this.prnProducts.map(p => ({
+            product_id: p.id,
+            name: p.name,
+            qty: p.qty,
+            rate: '',
+            total: 0,
+          })),
+        });
+      },
+    removeRow(index) {
+      this.bidFormRows.splice(index, 1);
      },
     openBidModal(prn) {
         this.selectedPRN = prn;
         this.clearForm(); // Clears existing form rows
         this.fetchPRNProducts(prn); // Fetch products for this PRN
+        this.groupedBids.forEach(item => {
+        this.calculateSubTotal(item);
+        this.calculateGrandTotal(item);
+    });
+      }, 
+    async fetchPRNProducts(prn) {
+        try {
+          const response = await this.callApi('post', 'prn/fetch-prn-products', { prn_id: prn.id });
+
+          const productsFromPRN = response.data.products;
+
+          this.prnProducts = productsFromPRN; // ✅ <-- THIS LINE IS CRUCIAL
+
+          this.bidFormRows = [
+            {
+              id: Date.now(),
+              advance_amount: 0,
+              after_delivery_amount: 0,
+              sub_total: 0,
+              grand_total: 0,
+              supplier_id: '',
+              quotation_ref: '',
+              quotation_date: '',
+              advance_percent: '',
+              after_delivery_percent: '',
+              credit_days: '',
+              discount: '',
+              delivery_charges: '',
+              contact_person: '',
+              contact_person_contact: '',
+              terms: '',
+              tax: '',
+              products: productsFromPRN.map(p => ({
+                product_id: p.id,
+                name: p.name,
+                qty: p.qty,
+                rate: '',
+                total: 0,
+              })),
+            }
+          ];
+        } catch (error) {
+          console.error("Error fetching PRN products:", error);
+        }
       },
     clearForm() {
         this.validationErrors = [];
@@ -538,16 +734,22 @@ export default {
         this.bidFormRows = [
           {
             id: Date.now(),
+            advance_amount: 0,
+            after_delivery_amount: 0,
+            sub_total: 0,
+            grand_total: 0,
             supplier_id: '',
             quotation_ref: '',
             quotation_date: '', 
             advance_percent: '',
             after_delivery_percent: '',
             credit_days: '',
-            discount_amount: '',
+            discount: '',
             delivery_charges: '',
             contact_person: '',
+            contact_person_contact:'',
             terms: '',
+            tax: '',
             products: [
               {
                 product_id: '',
@@ -573,57 +775,61 @@ export default {
         console.error("Failed to fetch bids by PRN:", error);
       }
      },
-    getSubtotal(details) {
-      if (!Array.isArray(details)) return 0;
-      return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
-     },
+   
     calculateTax(bid) {
       const subtotal = this.getSubtotal(bid.details);
       const taxPercent = parseFloat(bid.tax_percent || 0);
       return (subtotal * taxPercent / 100).toFixed(2);
      },
-    calculateGrandTotal(bid) {
+    getGrandTotal(bid) {
       const subtotal = this.getSubtotal(bid.details);
       const tax = parseFloat(this.calculateTax(bid));
       return (subtotal + tax).toFixed(2);
      },
-    async fetchPRNProducts(prn) {
-      try {
-        const response = await this.callApi('post', 'prn/fetch-prn-products', { prn_id: prn.id });
-
-        const productsFromPRN = response.data.products;
-
-        this.bidFormRows = [
-          {
-            supplier_id: '',
-            quotation_ref: '',
-            quotation_date: '', 
-            advance_percent: '',
-            after_delivery_percent: '',
-            credit_days: '',
-            discount_amount: '',
-            delivery_charges: '',
-            contact_person: '',
-            terms: '',
-            products: productsFromPRN.map(p => ({
-              product_id: p.id,
-              name: p.name,
-              qty: p.qty,
-              rate: '',
-              total: 0,
-            })),
-          }
-        ];
-      } catch (error) {
-        console.error("Error fetching PRN products:", error);
-      }
-     },
     getProductName(productId) {
       const prod = this.products.find(p => p.id === productId);
       return prod ? prod.name : 'Unknown';
-    },
-    updateTotal(item, product) {
-        product.total = product.qty * product.rate;
+     }, 
+     updateTotal(item, detail = null) {
+    // If called with a product detail (from input)
+    if (detail && typeof detail.qty !== 'undefined' && typeof detail.rate !== 'undefined') {
+      detail.total = detail.qty * detail.rate;
+    }
+
+    // Always recalculate subtotal and grand total
+    this.calculateSubTotal(item);
+    this.calculateGrandTotal(item);
+  },
+
+  // Calculates subtotal from item.details
+  calculateSubTotal(item) {
+    let list = item.details || item.products || [];
+
+    let subTotal = 0;
+    list.forEach(detail => {
+      const qty = parseFloat(detail.qty) || 0;
+      const rate = parseFloat(detail.rate) || 0;
+      detail.total = qty * rate;
+      subTotal += detail.total;
+    });
+
+    item.sub_total = parseFloat(subTotal.toFixed(2));
+  },
+
+  // Calculates grand total with tax, delivery, and discount
+  calculateGrandTotal(item) {
+    const sub = parseFloat(item.sub_total) || 0;
+    const tax = parseFloat(item.tax) || 0;
+    const discount = parseFloat(item.discount) || 0;
+    const delivery = parseFloat(item.delivery_charges) || 0;
+
+    const total = sub + tax + delivery - discount;
+    item.grand_total = parseFloat(total.toFixed(2));
+  },
+  
+  getSubtotal(details) {
+      if (!Array.isArray(details)) return 0;
+      return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
      },
     loadTinyMCE() {
       const script = document.createElement('script');

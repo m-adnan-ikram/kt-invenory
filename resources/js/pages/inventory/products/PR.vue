@@ -140,7 +140,7 @@
             </div>
             <div class="modal-body" v-if="selectedMR">
               <table class="table table-bordered">
-                <thead>
+                <thead class="table-light bg-light border-top">
                   <tr>
                   <th>#</th>
                   <th>Product</th>
@@ -169,7 +169,7 @@
                 </tbody>
               </table>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer table-light bg-light border-top">
               <!-- <button class="btn btn-success" @click="issueSelectedItems(selectedMR)">Issue Selected Items</button> -->
               <button class="btn btn-primary" @click="submitInlinePRN">Submit PRN</button>
               <button class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -177,85 +177,50 @@
           </div>
         </div>
       </div>
-
-      <!-- Create PRN Modal -->
-      <div class="modal fade" id="prnModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Create PRN</h5>
-              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-            </div>
-            <div class="modal-body">
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in remainingItems" :key="index">
-                    <td>{{ item.product?.name }}</td>
-                    <td><input
-                        type="text"
-                        class="form-control form-control-sm"
-                        v-model="item.qty"
-                        placeholder="Enter Quantity"
-                      /> 
-                      </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary" @click="submitPRN">Submit</button>
-              <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+ 
       <!-- PRN Detail Modal -->
       <div class="modal fade" id="viewPRNModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content shadow rounded-3">
-            <div class="modal-header">
-              <h5 class="modal-title">PRN Details - <span class="fw-semibold">PRN-{{ selectedPRN?.id }}</span></h5>
-              <button type="button" class="btn btn-close-white" data-bs-dismiss="modal" aria-label="Close">&times;</button>
-            </div>
-            <hr>
-            <div class="modal-body" v-if="selectedPRN">
-              <div class="mb-3">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title">PRN Details - <span class="fw-semibold">PRN-{{ selectedPRN?.id }}</span></h5>
+            <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"> &times; </button>
+          </div>
+          <div class="modal-body" v-if="selectedPRN">
+            <div class="row mb-3">
+              <div class="col-md-6">
                 <p class="mb-1"><strong>Requested By:</strong> {{ selectedPRN.mr.requested_by_user?.name }}</p>
                 <p class="mb-1"><strong>MR ID:</strong> MR-{{ selectedPRN.mr.id }}</p>
-                <p class="mb-3"><strong>Created At:</strong> {{ new Date(selectedPRN.created_at).toLocaleString() }}</p>
               </div>
-
-              <h6 class="mb-3">Products</h6>
-              <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                  <thead class="table-light">
-                    <tr>
-                      <th scope="col">#</th>
-                      <th scope="col">Product</th>
-                      <th scope="col">Quantity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(detail, index) in selectedPRN.details" :key="detail.id">
-                      <td>{{ index + 1 }}</td>
-                      <td>{{ detail.product?.name }}</td>
-                      <td>{{ detail.qty }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="col-md-6 text-md-end">
+                <p class="mb-1"><strong>Created At:</strong> {{ new Date(selectedPRN.created_at).toLocaleString() }}</p>
               </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+
+            <h6 class="mb-3 fw-bold">Products</h6>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover align-middle">
+                <thead class="table-light bg-light border-top">
+                  <tr>
+                    <th scope="col" class="text-center">#</th>
+                    <th scope="col">Product</th>
+                    <th scope="col" class="text-center">Quantity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(detail, index) in selectedPRN.details" :key="detail.id">
+                    <td class="text-center">{{ index + 1 }}</td>
+                    <td>{{ detail.product?.name }}</td>
+                    <td class="text-center">{{ detail.qty }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
+          <div class="modal-footer bg-light border-top">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
         </div>
       </div>
 

@@ -35,8 +35,8 @@
                                 class="nav-link text-capitalize d-flex justify-content-between"
                                 :to="{ name: 'PR' }"
                             >
-                                <span><i class="far fa-file"></i> PRN && Issuance</span>
-                                <span class="badge badge-secondary" style="width: 25px;">{{ mrsQty || 0 }}</span>
+                                <span><i class="far fa-file"></i> PRN</span>
+                                <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ mrsQty || 0 }}</span>
                             </router-link>
                             </li>
                             <li class="dropdown">
@@ -45,7 +45,7 @@
                                 :to="{ name: 'BidSummary' }"
                             >
                                 <span><i class="far fa-file"></i>Bid Summary</span>
-                                <span class="badge badge-secondary" style="width: 25px;">{{ prnsQty || 0 }}</span>
+                                <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ prnsQty || 0 }}</span>
                             </router-link>
                             </li>
                             <li class="dropdown">
@@ -54,13 +54,13 @@
                                 :to="{ name: 'PO' }"
                             >
                                 <span><i class="far fa-file"></i> PO</span>
-                                <span class="badge badge-secondary" style="width: 25px;">{{ bidsQty || 0 }}</span>
+                                <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ bidsQty || 0 }}</span>
                             </router-link>
                             </li>
                         <li class="dropdown" v-if="checkForSubmenu('terminals')">
                             <router-link class="nav-link text-capitalize" :to="{ name: 'stockInward' }">
                                 <span><i class="fa fa-warehouse"></i>  Stock Inward</span>
-                                <span class="badge badge-secondary" style="width: 25px;">{{ posQty || 0 }}</span>
+                                <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ posQty || 0 }}</span>
 
                             </router-link>
                         </li>
