@@ -9,7 +9,13 @@ class BidSummary extends Model
 {
     use HasFactory;
     protected $guarded = [];
-   
+    protected $fillable = [
+        'prn_id', 'mr_id', 'status', 'supplier_id', 'total_amount', 'total',
+        'tax', 'advance', 'after_delivery', 'credit_days', 'discount', 
+        'delivery_charges', 'contact_person', 'contact_person_contact', 
+        'terms_condition', 'quotation_date', 'quotation_ref'
+    ];
+    
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
@@ -24,4 +30,13 @@ class BidSummary extends Model
     public function details() {
         return $this->hasMany(BidDetail::class, 'bid_id');
     }
-}
+    public function bidDetails()
+    {
+        return $this->hasMany(BidDetail::class);
+    }
+    public function mr()
+    {
+        return $this->belongsTo(MaterialRequest::class, 'mr_id');
+    }
+}    
+

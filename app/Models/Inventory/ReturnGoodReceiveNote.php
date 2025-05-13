@@ -5,9 +5,9 @@ namespace App\Models\Inventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Supplier extends Model
+class ReturnGoodReceiveNote extends Model
 {
     use HasFactory;
-    protected $guarded = [];
-    protected $fillable = ['name', 'contact', 'address', 'cnic'];
+    protected $fillable = ['good_receive_note_id', 'return_date', 'reason', 'handled_by'];
+
 }

@@ -5,12 +5,12 @@ namespace App\Models\Inventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class GoodReceiveNoteDetail extends Model
+class MaintenanceRecord extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'good_receive_note_id', 'product_id', 'qty', 'rate',
-        'total', 'tax', 'delivery_charges', 'discount', 'net_amount'
+        'product_id', 'qty', 'maintenance_type', 'description',
+        'maintenance_date', 'next_due_date'
     ];
     
 }

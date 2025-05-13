@@ -9,11 +9,12 @@ class PurchaseRequisitionNote extends Model
 {
     use HasFactory;
     protected $guarded = [];
+    protected $fillable = ['mr_id', 'status'];
+
     public function details()
     {
         return $this->hasMany(PurchaseRequisitionNoteDetail::class, 'prn_id');
     }
-    
     public function mr()
     {
         return $this->belongsTo(MaterialRequest::class);

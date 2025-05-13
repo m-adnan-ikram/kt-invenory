@@ -5,12 +5,12 @@ namespace App\Models\Inventory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class GoodReceiveNoteDetail extends Model
+class ReturnStoreIssuanceNote extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'good_receive_note_id', 'product_id', 'qty', 'rate',
-        'total', 'tax', 'delivery_charges', 'discount', 'net_amount'
+        'store_issuance_note_id', 'return_date', 'reason',
+        'returned_by', 'approved_by'
     ];
     
 }
