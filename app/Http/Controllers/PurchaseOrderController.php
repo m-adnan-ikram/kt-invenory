@@ -18,12 +18,14 @@ class PurchaseOrderController extends Controller
     public function index()
     {
         // Only fetch POs with status == 1
-         $pos = PurchaseOrder::with([
+        $pos = PurchaseOrder::with([
             'supplier',
-            'mr.requestedByUser',
+            'mr.requestedByUser', // ensure this is working
             'prn',
-        ])->latest()->get();
-     
+        ])
+        ->where('status', 1)
+        ->latest()
+        ->get();        
         $bids = BidSummary::with([
             'supplier',
             'prn.details.product',
@@ -150,22 +152,28 @@ class PurchaseOrderController extends Controller
             ], 500);
         }
     }
-    public function show($id)
+    public function show(Request $request)
     {
-        $po = PurchaseOrder::with([
+        $prnId = $request->prn_id;
+        // Fetch all POs relted to this PRN
+     $pos = PurchaseOrder::with([
             'supplier',
+            'poDetails.product',
             'mr.requestedByUser',
             'prn',
-            'details.product'
-        ])->findOrFail($id);
+        ])
+        ->where('prn_id', $prnId)
+        ->get();
 
+        if ($pos->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No Purchase Orders found for this PRN.',
+            ], 404);
+        }
         return response()->json([
             'success' => true,
-            'po' => $po
+            'pos' => $pos,
         ]);
     }
-
-
-
-    
 }

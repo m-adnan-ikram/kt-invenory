@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum'])->prefix('web/v1/pos')->group(function () {
     Route::post('/', [PurchaseOrderController::class, 'index']);          
     Route::post('store', [PurchaseOrderController::class, 'store']);  
+    Route::post('show', [PurchaseOrderController::class, 'show']);  
 });
 // Bid Summaries
 Route::middleware(['auth:sanctum'])->prefix('web/v1/bid-summaries')->group(function () {

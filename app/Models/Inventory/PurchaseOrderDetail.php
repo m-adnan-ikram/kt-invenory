@@ -15,5 +15,9 @@ class PurchaseOrderDetail extends Model
         'gate_receive_note', 'store_received'
     ];
     
-
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+    
 }
