@@ -178,9 +178,6 @@
             <div class="form-group col-md-3">
             <div class="d-flex justify-content-between">
               <label>Select Supplier</label>
-              <button type="button" class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addSupplier">
-                Add New
-              </button>
             </div>
             <select v-model="item.supplier_id" class="form-control select2">
                 <option value="">Select Supplier</option>
@@ -301,47 +298,73 @@
           </button>
         </template>
         </Add> 
+
         <!-- VIEW BID MODAL -->
-        <div class="modal fade" id="viewBidModal" tabindex="-1" role="dialog">
+        <div class="modal fade" id="viewBidModal" tabindex="-1" role="dialog" @hidden="removeNewBidForm">
           <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Bid Summary for PRN</h5>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-              </div>
-              <div class="modal-body">
-                <!-- Loop over each bid -->
-                <div v-for="(item, bIndex) in groupedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
-                  <h5 class="text-warning d-flex justify-content-between">
-                      Bid #{{ bIndex + 1 }}
-                      <span>
-                          <template v-if="item.isEditing">
-                            <button class="btn btn-sm btn-secondary mr-2" @click="item.isEditing = false">
-                              <i class="fas fa-times"></i> Cancel
-                            </button>
-                            <button class="btn btn-sm btn-success mr-2" @click="updateBid(item)">
-                              <i class="fas fa-save"></i> Update
-                            </button>
-                          </template>
-                          <template v-else>
-                            <button class="btn btn-sm btn-primary mr-2" @click="item.isEditing = true">
-                              <i class="fas fa-edit"></i> Edit
-                            </button>
-                          </template>
-                          <button class="btn btn-sm btn-danger" @click="deleteBid(item.id, bIndex)">
-                            <i class="fas fa-trash"></i> Delete
-                          </button>
-                        </span>
-                    </h5>
-                  <div class="row p-3" style="background-color: #eaeff2;">
-                    <div class="col-md-12"><h6><strong>Supplier:</strong> {{ item.supplier?.name }}</h6></div>
-                    <div class="col-md-4"><strong>Date:</strong> {{ new Date(item.created_at).toLocaleString() }}</div>
-                    <div class="col-md-4"><strong>MR #:</strong> MR - {{ item.prn?.mr_id || 'N/A' }}</div>
-                    <div class="col-md-4"><strong>PRN #:</strong> PRN - {{ item.prn?.id || 'N/A' }}</div>
-                    <div class="col-md-12"><strong>Requested By:</strong> {{ item.prn?.mr?.requested_by_user?.name || 'N/A' }}</div>
+            <div class="modal-header d-flex justify-content-between">
+              <h5 class="modal-title">Bid Summary for PRN</h5>
+              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="text-right m-3">
+              <button v-if="selectedPRNStatus == '1'" class="btn btn-info btn-sm" @click="addNewBid">
+                <i class="fa fa-plus"></i> Add New Bidder
+              </button> 
+            </div>
+            <div class="modal-body">
+              
+ 
+              <div  id="addNewBidForm">
+                <div v-for="(item, index) in newBidFormRows" :key="index" class="row border-top pt-3 mt-4" id="addNewBidForm">
+               <div class="col-md-12">
+                <h5>Add New Bidder</h5>
+               </div>
+                  <div class="form-group col-md-3">
+                  <label>Select Supplier</label>
+                  <select v-model="item.supplier_id" class="form-control select2">
+                    <option value="">Select Supplier</option>
+                    <option v-for="sup in suppliers" :key="sup.id" :value="sup.id">{{ sup.name }}</option>
+                  </select>
+                </div>
+                  <div class="form-group col-md-3">
+                    <label>Contact Person</label>
+                    <input type="text" class="form-control" v-model="item.contact_person">
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label>Contact Contact</label>
+                    <input type="text" class="form-control" v-model="item.contact_person_contact">
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label>Quotation Ref</label>
+                    <input type="text" class="form-control" v-model="item.quotation_ref">
+                  </div>
 
-                    <table class="table table-bordered mt-2">
-                      <thead class="thead-light">
+                  <div class="form-group col-md-3">
+                    <label>Quotation Date</label>
+                    <input type="date" class="form-control" v-model="item.quotation_date">
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label>Credit Days</label>
+                    <input type="number" class="form-control" v-model="item.credit_days">
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label>Advance (%)</label>
+                    <input type="number" class="form-control" v-model="item.advance_percent">
+                  </div>
+                  <div class="form-group col-md-3">
+                    <label>After Delivery (%)</label>
+                    <input type="number" class="form-control" v-model="item.after_delivery_percent">
+                  </div>
+
+                  <div class="form-group col-md-12">
+                    <label>Terms & Conditions</label>
+                    <textarea class="form-control" v-model="item.terms" rows="2"></textarea>
+                  </div>
+                  <div class="col-md-12">
+                    <h5>Products Quoted</h5>
+                    <table class="table table-bordered">
+                      <thead>
                         <tr>
                           <th>#</th>
                           <th>Product</th>
@@ -351,7 +374,101 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="(detail, dIndex) in item.details" :key="dIndex">
+                        <tr v-for="(product, pIndex) in item.products" :key="pIndex">
+                            <td>{{ pIndex + 1 }}</td>
+                            <td>{{ product.name }}</td>
+                            <td><input type="number" class="form-control" v-model="product.qty" readonly @input="updateTotal(item, product)"></td>
+                            <td>
+                              <input type="number" class="form-control" v-model.number="product.rate" @input="updateTotal(item, product)">
+                            </td>
+                            <td>{{ product.qty * product.rate }}</td>
+                          </tr>
+                          <tr v-if="!item.products || item.products.length === 0">
+                            <td colspan="5">No products found.</td>
+                          </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="col-md-6 ml-auto">
+                    <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+                      <label class="w-50"><h6>Sub Total</h6></label>
+                      <h5 class="text-right w-50">{{ item.sub_total }} PKR</h5>
+                    </div>
+                    <div class="form-group col-md-12 d-flex p-0 m-0">
+                      <label class="w-25">Delivery Charges</label>
+                      <input type="text" class="form-control w-75" v-model="item.delivery_charges" @input="calculateGrandTotal(item)">
+                    </div>
+                    <div class="form-group col-md-12 d-flex p-0 m-0">
+                      <label class="w-25">Tax</label>
+                      <input type="text" class="form-control w-75" v-model="item.tax" @input="calculateGrandTotal(item)">
+                    </div>
+                    <div class="form-group col-md-12 d-flex p-0 m-0">
+                      <label class="w-25">Discount</label>
+                      <input type="text" class="form-control w-75" v-model="item.discount" @input="calculateGrandTotal(item)">
+                    </div>
+                    <div class="form-group col-md-12 d-flex p-0 m-0 mt-2">
+                      <label class="w-50"><h6>Grand Total</h6></label>
+                      <h5 class="text-right w-50">{{ item.grand_total }} PKR</h5>
+                    </div>
+                  </div>
+                  <div class="form-group col-md-12 d-flex justify-content-end">
+                    <button class="btn btn-danger btn-sm" @click="removeRow(index)">
+                      <i class="fa fa-minus"></i> Remove Bidder
+                    </button>
+                  </div>
+                </div>
+                <div v-if="newBidFormRows.length > 0" class="form-group col-md-12 d-flex justify-content-end">
+                  <button v-if="selectedPRNStatus == '1'" class="btn btn-info btn-sm" @click="addNewBid">
+                    <i class="fa fa-plus"></i> Add New Bidder
+                  </button> 
+                  <button class="btn btn-success btn-sm ml-3" @click="createNewBid">
+                    <i class="fa fa-save"></i> Submit New Bidders
+                  </button>
+                </div>
+              </div>
+              <!-- Loop over each bid -->
+              <div v-for="(item, bIndex) in groupedBids" :key="bIndex" class="mb-4 border-bottom pb-3">
+                <h5 class="text-warning d-flex justify-content-between">
+                  Bid #{{ bIndex + 1 }}
+                  <span>
+                    <template v-if="item.isEditing" >
+                      <button class="btn btn-sm btn-secondary mr-2" @click="item.isEditing = false">
+                        <i class="fas fa-times"></i> Cancel
+                      </button>
+                      <button class="btn btn-sm btn-success mr-2" @click="updateBid(item, bIndex)">
+                        <i class="fas fa-save"></i> Save
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button v-if="selectedPRNStatus == '1'" class="btn btn-sm btn-primary mr-2" @click="item.isEditing = true">
+                        <i class="fas fa-edit"></i> Edit
+                      </button>
+                    </template>
+                    <button v-if="selectedPRNStatus == '1'" class="btn btn-sm btn-danger" @click="deleteBid(item.id, bIndex)">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                  </span>
+                </h5>
+                
+                <div class="row p-3" style="background-color: #eaeff2;">
+                  <!-- Supplier and other bid details -->
+                  <div class="col-md-12"><h6><strong>Supplier:</strong> {{ item.supplier?.name }}</h6></div>
+                  <div class="col-md-4"><strong>Date:</strong> {{ new Date(item.created_at).toLocaleString() }}</div>
+                  <div class="col-md-4"><strong>MR #:</strong> MR - {{ item.prn?.mr_id || 'N/A' }}</div>
+                  <div class="col-md-4"><strong>PRN #:</strong> PRN - {{ item.prn?.id || 'N/A' }}</div>
+                  <div class="col-md-12"><strong>Requested By:</strong> {{ item.prn?.mr?.requested_by_user?.name || 'N/A' }}</div>
+                  <table class="table table-bordered mt-2">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(detail, dIndex) in item.details" :key="dIndex">
                         <td>{{ dIndex + 1 }}</td>
                         <td>{{ detail.product?.name || 'N/A' }}</td>
                         <td>{{ detail.qty }}</td>
@@ -361,91 +478,38 @@
                         <td v-else>{{ detail.rate }}</td>
                         <td>{{ detail.total }}</td>
                       </tr>
-                      </tbody>
-                    </table>
-                    <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
-                    <div class="col-md-4 d-flex"><strong>Advance %:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.advance">
-                      </template>
-                      <template v-else>
-                        {{ item.advance }}
-                      </template>
-                    </div>
-                    <div class="col-md-4 d-flex"><strong>After Delivery %:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.after_delivery">
-                      </template>
-                      <template v-else>
-                        {{ item.after_delivery }}
-                      </template>
-                    </div> 
-                    <div class="col-md-4 d-flex"><strong>Credit Days:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.credit_days">
-                      </template>
-                      <template v-else>
-                        {{ item.credit_days }}
-                      </template>
-                    </div> 
-                    <div class="col-md-4 d-flex"><strong>Discount:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.discount" @input="updateTotal(item)">
-                      </template>
-                      <template v-else>
-                        {{ item.discount }}
-                      </template>
-                    </div>
-
-                    <div class="col-md-4 d-flex"><strong>Delivery Charges:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.delivery_charges" @input="updateTotal(item)">
-                      </template>
-                      <template v-else>
-                        {{ item.delivery_charges }}
-                      </template>
-                    </div>
-
-                    <div class="col-md-4 d-flex"><strong>Tax:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.tax" @input="updateTotal(item)">
-                      </template>
-                      <template v-else>
-                        {{ item.tax }}
-                      </template>
-                    </div>
-                    <div class="col-md-4 d-flex"><strong>Contact Person:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.contact_person">
-                      </template>
-                      <template v-else>
-                        {{ item.contact_person }}
-                      </template>
-                    </div> 
-                    <div class="col-md-4 d-flex"><strong>Contact Person Contact:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.contact_person_contact">
-                      </template>
-                      <template v-else>
-                        {{ item.contact_person_contact }}
-                      </template>
-                    </div>
-                    <div class="col-md-4 d-flex"><strong>Terms & Conditions:</strong>
-                      <template v-if="item.isEditing">
-                        <input type="number" class="form-control ml-2" v-model.number="item.terms_condition">
-                      </template>
-                      <template v-else>
-                        {{ item.terms_condition }}
-                      </template>
-                    </div> 
-                    <div class="col-md-12 text-right mt-2"><h6><strong>Grand Total:</strong> {{ item.grand_total }}</h6></div>
+                    </tbody>
+                  </table>
+                  <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
+                  
+                  <!-- Editable fields for bid -->
+                  <div class="col-md-4 d-flex"><strong>Advance %:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="number" class="form-control ml-2" v-model.number="item.advance">
+                    </template>
+                    <template v-else>
+                      {{ item.advance }}
+                    </template>
                   </div>
+                  <div class="col-md-4 d-flex"><strong>Discount:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="number" class="form-control ml-2" v-model.number="item.discount" @input="updateTotal(item)">
+                    </template>
+                    <template v-else>
+                      {{ item.discount }}
+                    </template>
+                  </div>
+
+                  <div class="col-md-12 text-right mt-2"><h6><strong>Grand Total:</strong> {{ item.grand_total }}</h6></div>
                 </div>
               </div>
-              <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Close</button>
-              </div>
             </div>
+            <div class="modal-footer">
+             
+              <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+
           </div>
         </div>
         <AddSupplierModal></AddSupplierModal>
@@ -472,24 +536,10 @@ export default {
   },
   data() {
     return { 
-      groupedBids: [
-      {
-        id: 1,
-        isEditing: false,
-        discount: 0,
-        delivery_charges: 0,
-        tax: 0,
-        sub_total: 0,
-        grand_total: 0,
-        products: [
-          {
-            product_id: '',
-            rate: '',
-            quantity: 1
-          }
-        ]
-      }
-      ],
+      showNewBidForm: false,
+      newBidFormRows: [],
+      groupedBids: [],
+      selectedPRNStatus: null,
       selectedBids: null, // this must match the modal binding
       activeTab: 'bid',
       prnID:'',
@@ -557,7 +607,7 @@ export default {
     ],
     };
    },
-    mounted() {
+  mounted() {
       this.loadTinyMCE();
       this.fetchBid_PRN();
       const script = document.createElement('script');
@@ -568,9 +618,12 @@ export default {
         this.calculateSubTotal(item);
         this.calculateGrandTotal(item);
       });
+    $('#viewBidModal').on('hidden.bs.modal', () => {
+        this.newBidFormRows = [];
+      });
     },
-    computed: {
-      uniquePRNBids() {
+  computed: {
+    uniquePRNBids() {
         const seen = new Set();
         return this.bids.filter(bid => {
           if (!bid.prn?.id || seen.has(bid.prn.id)) return false;
@@ -579,7 +632,10 @@ export default {
         });
       }
     },
-   methods: {
+  methods: {
+    removeNewBidForm() {
+      this.newBidFormRows = [];
+    },
     async fetchBid_PRN() {
       try {
         const response = await this.callApi('post', 'bid-summaries');
@@ -596,7 +652,7 @@ export default {
      },
     viewPRN(id) {
      this.selectedPRN = this.prns.find(prn => prn.id === id);
-     },
+     }, 
     async createBid() {  
       const payload = {
         prn_id: this.selectedPRN?.id,
@@ -644,6 +700,53 @@ export default {
         });
       }
      }, 
+     async createNewBid() {
+      try {
+        const payload = {
+          prn_id: this.selectedPRNId,
+          mr_id: this.selectedMRId,
+          suppliers: this.newBidFormRows.map(row => ({
+            supplier_id: row.supplier_id,
+            quotation_ref: row.quotation_ref,
+            quotation_date: row.quotation_date, 
+            advance_percent: row.advance_percent,
+            advance_amount: row.advance_amount,
+            after_delivery_percent: row.after_delivery_percent,
+            after_delivery_amount: row.after_delivery_amount,
+            credit_days: row.credit_days,
+            discount: row.discount,
+            delivery_charges: row.delivery_charges,
+            contact_person: row.contact_person,
+            contact_person_contact: row.contact_person_contact,
+            terms_condition: row.terms,
+            tax: row.tax,
+            sub_total: row.sub_total,
+            grand_total: row.grand_total,
+            products: row.products.map(product => ({
+              product_id: product.product_id,
+              rate: product.rate,
+              quantity: product.qty
+            }))
+          }))
+        };
+        const response = await this.callApi('post', 'bid-summaries/store', payload);
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Bid Summary submitted successfully!'
+        });
+        this.fetchBid_PRN();
+        this.clearForm(); 
+        this.newBidFormRows = [];
+      } catch (error) {
+        console.error('Bid submission failed:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.response?.data?.message || 'Submission failed.'
+        });
+      }
+    },
     addRow() {
         if (!this.prnProducts || !this.prnProducts.length) {
           alert("Please select a PRN first to load products.");
@@ -675,7 +778,7 @@ export default {
             total: 0,
           })),
         });
-      },
+     },
     removeRow(index) {
       this.bidFormRows.splice(index, 1);
      },
@@ -687,7 +790,7 @@ export default {
         this.calculateSubTotal(item);
         this.calculateGrandTotal(item);
     });
-      }, 
+     }, 
     async fetchPRNProducts(prn) {
         try {
           const response = await this.callApi('post', 'prn/fetch-prn-products', { prn_id: prn.id });
@@ -727,7 +830,7 @@ export default {
         } catch (error) {
           console.error("Error fetching PRN products:", error);
         }
-      },
+     },
     clearForm() {
         this.validationErrors = [];
         this.success = '';
@@ -767,6 +870,8 @@ export default {
         const res = await this.callApi('post', 'bid-summaries/show', payload);
         if (res.data.success) {
           this.groupedBids = res.data.bids_by_prn; // result will be an array of PRN objects with their bids
+          const selectedBid = this.uniquePRNBids.find(bid => bid.prn?.id === prnId);
+         this.selectedPRNStatus = selectedBid?.status;  
           this.$nextTick(() => {
             $('#viewBidModal').modal('show');
           });
@@ -775,7 +880,6 @@ export default {
         console.error("Failed to fetch bids by PRN:", error);
       }
      },
-   
     calculateTax(bid) {
       const subtotal = this.getSubtotal(bid.details);
       const taxPercent = parseFloat(bid.tax_percent || 0);
@@ -790,44 +894,44 @@ export default {
       const prod = this.products.find(p => p.id === productId);
       return prod ? prod.name : 'Unknown';
      }, 
-     updateTotal(item, detail = null) {
+     getSelectedProductName(productId) {
+      const product = this.groupedBids[0]?.prn?.products.find(p => p.id === productId);
+      return product ? product.name : '';
+    },
+    updateTotal(item, detail = null) {
     // If called with a product detail (from input)
     if (detail && typeof detail.qty !== 'undefined' && typeof detail.rate !== 'undefined') {
       detail.total = detail.qty * detail.rate;
     }
-
     // Always recalculate subtotal and grand total
     this.calculateSubTotal(item);
     this.calculateGrandTotal(item);
-  },
+     },
+    // Calculates subtotal from item.details
+    calculateSubTotal(item) {
+      let list = item.details || item.products || [];
 
-  // Calculates subtotal from item.details
-  calculateSubTotal(item) {
-    let list = item.details || item.products || [];
+      let subTotal = 0;
+      list.forEach(detail => {
+        const qty = parseFloat(detail.qty) || 0;
+        const rate = parseFloat(detail.rate) || 0;
+        detail.total = qty * rate;
+        subTotal += detail.total;
+      });
 
-    let subTotal = 0;
-    list.forEach(detail => {
-      const qty = parseFloat(detail.qty) || 0;
-      const rate = parseFloat(detail.rate) || 0;
-      detail.total = qty * rate;
-      subTotal += detail.total;
-    });
+      item.sub_total = parseFloat(subTotal.toFixed(2));
+     },
+    // Calculates grand total with tax, delivery, and discount
+    calculateGrandTotal(item) {
+      const sub = parseFloat(item.sub_total) || 0;
+      const tax = parseFloat(item.tax) || 0;
+      const discount = parseFloat(item.discount) || 0;
+      const delivery = parseFloat(item.delivery_charges) || 0;
 
-    item.sub_total = parseFloat(subTotal.toFixed(2));
-  },
-
-  // Calculates grand total with tax, delivery, and discount
-  calculateGrandTotal(item) {
-    const sub = parseFloat(item.sub_total) || 0;
-    const tax = parseFloat(item.tax) || 0;
-    const discount = parseFloat(item.discount) || 0;
-    const delivery = parseFloat(item.delivery_charges) || 0;
-
-    const total = sub + tax + delivery - discount;
-    item.grand_total = parseFloat(total.toFixed(2));
-  },
-  
-  getSubtotal(details) {
+      const total = sub + tax + delivery - discount;
+      item.grand_total = parseFloat(total.toFixed(2));
+     },
+    getSubtotal(details) {
       if (!Array.isArray(details)) return 0;
       return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
      },
@@ -836,6 +940,45 @@ export default {
       script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
       script.referrerPolicy = "origin";
       document.head.appendChild(script);
+     },
+     addNewBid() {
+      const selectedPRN = this.groupedBids[0]?.prn;
+      // ✅ Set PRN and MR ID here
+      this.selectedPRNId = selectedPRN.id;
+      this.selectedMRId = selectedPRN.mr_id;
+      const newBid = {
+        id: Date.now(),
+        advance_amount: 0,
+        after_delivery_amount: 0,
+        sub_total: 0,
+        grand_total: 0,
+        supplier_id: '',
+        quotation_ref: '',
+        quotation_date: '',
+        advance_percent: '',
+        after_delivery_percent: '',
+        credit_days: '',
+        discount: '',
+        delivery_charges: '',
+        contact_person: '',
+        contact_person_contact: '',
+        terms: '',
+        tax: '',
+        products: this.groupedBids[0].details.map(detail => ({
+          product_id: detail.product_id,
+          name: detail.product?.name,
+          qty: detail.qty,
+          rate: 0,
+          total: 0,
+        })),
+      };
+      this.newBidFormRows.push(newBid);
+    },
+    removeRow(index) {
+        this.newBidFormRows.splice(index, 1);
+        if (this.newBidFormRows.length === 0) {
+          this.newBidFormRows = [];
+        }
      }
   }
 };

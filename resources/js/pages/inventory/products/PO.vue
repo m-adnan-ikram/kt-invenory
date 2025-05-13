@@ -20,55 +20,57 @@
             </div>
             <!-- POs Table -->
             <div class="col-12" v-if="activeTab === 'pos'">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h4>Purchase Orders - PO</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Sr No.</th>
-                                        <th>PO #</th>
-                                        <th>MR #</th>
-                                        <th>Total Amount</th>
-                                        <th>Date</th> 
-                                        <th>Request By</th>
-                                        <th>Approved By</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(po, index) in pos" :key="po.id">
-                                        <td>{{ index + 1 }}</td>
-                                        <td>PO - {{ po.po_no }}</td>
-                                        <td>MR - {{ po.mr_no }}</td>
-                                        <td>{{ po.net_amount }}</td>
-                                        <td>{{ po.date }}</td> 
-                                        <td>{{ po.requestBy.name }}</td>
-                                        <td>{{ po.assignedBy.name }}</td>
-                                        <td>
-                                            <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
-                                            <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
-                                            <span v-else class="badge badge-danger">Rejected</span>
-                                        </td>
-                                        <td>
-                                            <!-- Buttons -->
-                                            <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewPOModal" @click="viewPO(po.id)">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="pos.length == 0">
-                                        <p class="text-center">No Purchase Orders Found</p>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+              <div class="card card-primary">
+                <div class="card-header">
+                  <h4>Purchase Orders - PO</h4>
                 </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>Sr No.</th>
+                        <th>PRN #</th>
+                        <th>MR #</th>
+                        <th>Request By</th>
+                        <th>PO (BID #)</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template v-for="(group, index) in posGroupedByPRN" :key="group.prn_id">
+                        <tr>
+                          <td>{{ index + 1 }}</td>
+                          <td>{{ group.prn_no }}</td>
+                          <td>{{ group.mr_no }}</td>
+                          <td>{{ group.requested_by }}</td>
+                          <td>
+                            BID - {{ group.pos[0]?.bid_id || 'N/A' }}
+                            <span v-if="group.pos.length > 1" class="badge badge-info ml-2">{{ group.pos.length }} POs</span>
+                          </td>
+                          <td>{{ new Date(group.pos[0]?.created_at).toLocaleString() }}</td>
+                          <td>
+                            <span v-if="group.pos[0]?.status == '2'" class="badge badge-success">Approved</span>
+                            <span v-else-if="group.pos[0]?.status == '1'" class="badge badge-warning">Processing</span>
+                            <span v-else class="badge badge-danger">Rejected</span>
+                          </td>
+                          <td>
+                            <button class="btn btn-info btn-sm" @click="viewPOByPRN(group.prn_id, group)">
+                              <i class="fas fa-eye"></i> View
+                            </button>
+                          </td>
+                        </tr>
+                      </template>
+                      <tr v-if="posGroupedByPRN.length === 0">
+                        <td colspan="8" class="text-center">No Purchase Orders Found</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+              </div>
             </div>
             <!-- BID TABLE -->
             <div class="col-12" v-if="activeTab === 'bids'">
@@ -272,6 +274,87 @@
             </div>
           </div>
         </div>
+        <!-- POs Modal --> 
+        <div class="modal fade" id="viewPOModal" tabindex="-1" role="dialog" v-if="selectedPOs.length">
+          <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+              <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title p-2">
+                  POs Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" @click="selectedPOs = []">
+                  <span>&times;</span>
+                </button>
+              </div>
+              <div class="modal-body bg-light">
+                <div
+                  v-for="(po, idx) in selectedPOs"
+                  :key="po.id"
+                  class="mb-3 p-4 border rounded shadow-sm"
+                >
+                <h6 class="mb-3 font-weight-bold border-bottom pb-2 d-flex justify-content-between align-items-center">
+                  <span>
+                      PO #{{ po.id }} &nbsp;&nbsp; | &nbsp;&nbsp;
+                      BID #: <span class="text-dark">{{ po.bid_id }}</span> &nbsp;&nbsp; | &nbsp;&nbsp;
+                      PRN #: <span class="text-dark">{{ po.prn_id }}</span> &nbsp;&nbsp; | &nbsp;&nbsp;
+                      MR #: <span class="text-dark">{{ po.mr_id }}</span>
+                    </span>
+                    <h6 class="text-dark">
+                      Date :
+                      {{ new Date(po.created_at).toLocaleString() }}
+                    </h6>
+                </h6>
+                <div class="mb-2">
+                    <h6 class="font-weight-bold border-bottom pb-1 mb-2">Supplier Information</h6>
+                    <div class="row">
+                      <div class="col-md-4 mb-1"><strong>Name:</strong> {{ po.supplier?.name }}</div>
+                      <div class="col-md-4 mb-1"><strong>Contact:</strong> {{ po.supplier?.contact }}</div>
+                      <div class="col-md-4 mb-1"><strong>CNIC:</strong> {{ po.supplier?.cnic }}</div>
+                      <div class="col-md-12 mb-1"><strong>Address:</strong> {{ po.supplier?.address }}</div>
+                    </div>
+                  </div>
+                  <table class="table table-bordered table-striped table-sm shadow-sm">
+                  <thead class="thead text-center">
+                    <tr>
+                      <th class="py-2 px-3">#</th>
+                      <th class="py-2 px-3">Product</th>
+                      <th class="py-2 px-3">Qty</th>
+                      <th class="py-2 px-3">Rate</th>
+                      <th class="py-2 px-3">Subtotal</th>
+                      <th class="py-2 px-3">Tax</th>
+                      <th class="py-2 px-3">Delivery</th>
+                      <th class="py-2 px-3">Discount</th>
+                      <th class="py-2 px-3">Grand Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr 
+                      v-for="(item, i) in po.po_details" 
+                      :key="item.id" 
+                      class="text-center align-middle"
+                    >
+                      <td class="py-2 px-3">{{ i + 1 }}</td>
+                      <td class="py-2 px-3">{{ item.product?.name || 'N/A' }}</td>
+                      <td class="py-2 px-3">{{ item.qty }}</td>
+                      <td class="py-2 px-3">{{ parseFloat(item.rate).toFixed(2) }}</td>
+                      <td class="py-2 px-3">{{ parseFloat(item.sub_total).toFixed(2) }}</td>
+                      <td class="py-2 px-3">{{ parseFloat(item.tax).toFixed(2) }}</td>
+                      <td class="py-2 px-3">{{ parseFloat(item.delivery).toFixed(2) }}</td>
+                      <td class="py-2 px-3">{{ parseFloat(item.discount).toFixed(2) }}</td>
+                      <td class="py-2 px-3 font-weight-bold text-success">{{ parseFloat(item.net_amount).toFixed(2) }}</td>
+                    </tr>
+                    <tr class="table-info font-weight-bold">
+                      <td colspan="8" class="text-right py-2 px-3">PO Grand Total</td>
+                      <td class="text-success py-2 px-3"><h6>{{ parseFloat(po.total).toFixed(2) }}</h6></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                </div>
+              </div>
+            </div>
+            </div>
+        </div>
       </div>
     </section>
   </template>
@@ -286,8 +369,10 @@
       Add,  
     },
     data() {
-      return { 
+    return { 
         selectedMR: null,
+        selectedPO: null,
+        selectedPOs: [],
         extraFields: [
           'Terms & Conditions',
           'Advance %',
@@ -305,7 +390,8 @@
         selectedDetails: [],
         isApprovalMode: false,
         decisionMap: {}, // Keeps track of approve/reject state for each bidder
-        activeTab: 'po',
+        activeTab: 'pos', 
+        selectedGroup: null, // For modal
         selectedBid: { bidders: [] },
         formID: 'addPOForm',
         data: {
@@ -349,12 +435,33 @@
         loading: false,
         validationErrors: [],
         success: '',
-      };
+     };
     },
     mounted() {
       this.fetchBid_PO();
     },
     computed: {
+    posGroupedByPRN() {
+      const grouped = {};
+      this.pos.forEach(po => {
+        const prnId = po.prn_id || 'N/A';
+        const prn = po.prn || {};
+        const mr = po.mr || {};
+        const user = mr.requested_by_user || {};
+
+        if (!grouped[prnId]) {
+          grouped[prnId] = {
+            prn_id: prnId,
+            prn_no: prn.prn_no || 'PRN-' + prnId,
+            mr_no: mr.mr_no || 'MR-' + po.mr_id,
+            requested_by: user.name || 'N/A',
+            pos: []
+          };
+        }
+        grouped[prnId].pos.push(po);
+      });
+      return Object.values(grouped);
+      },
     uniquePRNBids() {
           const seen = new Set();
           return this.bids.filter(bid => {
@@ -394,7 +501,7 @@
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             }
-        }, 
+      }, 
       clearForm() {
         this.data = {
           product_name: '',
@@ -510,17 +617,27 @@
           this.loading = false;
         }
       },
-      async viewPO(id) {
-        try { 
-            const response = await this.callApi('post', 'po/show', payload);
-            if (response.data.success) {
-                this.selectedPO = response.data.po;
-                $('#viewPOModal').modal('show'); // show modal manually
-            }
+      async viewPOByPRN(prn_id, group = null) {
+        try {
+          // Fetch the PO data for the given PRN ID
+          const response = await this.callApi('post', 'pos/show', { prn_id });
+          
+          if (response.data.success) {
+            // Update the selectedPOs and selectedGroup
+            this.selectedPOs = response.data.pos;
+            this.selectedGroup = group; // store extra info if needed
+
+            // Add a slight delay before showing the modal to ensure the DOM is updated
+            setTimeout(() => {
+              $('#viewPOModal').modal('show');
+            }, 100); // Delay in milliseconds (100ms)
+          }
         } catch (error) {
-            console.error('Error fetching PO details:', error);
+          console.error('Error fetching PO data for PRN:', error);
         }
       }
+ 
+
     }
   };
   </script>
