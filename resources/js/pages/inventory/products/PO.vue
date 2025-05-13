@@ -6,12 +6,12 @@
             <div class="col-12 mt-4">
               <ul class="nav nav-tabs mb-3">
                 <li class="nav-item">
-                  <a class="nav-link" :class="{ active: activeTab === 'po' }" href="#" @click.prevent="activeTab = 'po'">
+                  <a class="nav-link" :class="{ active: activeTab === 'pos' }" href="#" @click.prevent="activeTab = 'pos'">
                     <b> Purchase Order - POs </b>
                   </a>
                 </li>
                 <li class="nav-item ml-2">
-                  <a class="nav-link" :class="{ active: activeTab === 'bid' }" href="#" @click.prevent="activeTab = 'bid'">
+                  <a class="nav-link" :class="{ active: activeTab === 'bids' }" href="#" @click.prevent="activeTab = 'bids'">
                     <b>Bid Summaries</b>
                     <span class="badge badge-primary ml-2">{{ bids.length }}</span>
                   </a>
@@ -19,96 +19,59 @@
               </ul>
             </div>
             <!-- POs Table -->
-            <div class="col-12" v-if="activeTab === 'po'">
-              <div class="card card-primary">
-                <div class="card-header">
-                  <h4>Purchase Orders - PO</h4>
+            <div class="col-12" v-if="activeTab === 'pos'">
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h4>Purchase Orders - PO</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Sr No.</th>
+                                        <th>PO #</th>
+                                        <th>MR #</th>
+                                        <th>Total Amount</th>
+                                        <th>Date</th> 
+                                        <th>Request By</th>
+                                        <th>Approved By</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(po, index) in pos" :key="po.id">
+                                        <td>{{ index + 1 }}</td>
+                                        <td>PO - {{ po.po_no }}</td>
+                                        <td>MR - {{ po.mr_no }}</td>
+                                        <td>{{ po.net_amount }}</td>
+                                        <td>{{ po.date }}</td> 
+                                        <td>{{ po.requestBy.name }}</td>
+                                        <td>{{ po.assignedBy.name }}</td>
+                                        <td>
+                                            <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
+                                            <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
+                                            <span v-else class="badge badge-danger">Rejected</span>
+                                        </td>
+                                        <td>
+                                            <!-- Buttons -->
+                                            <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewPOModal" @click="viewPO(po.id)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="pos.length == 0">
+                                        <p class="text-center">No Purchase Orders Found</p>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                  <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                      <thead>
-                        <tr>
-                          <th>Sr No.</th>
-                          <th>PO #</th> 
-                          <th>MR #</th> 
-                          <th>Total Amount</th> 
-                          <th>Date</th>
-                          <th>Supplier</th>
-                          <th>Request By</th>
-                          <th>Approved By</th>
-                          <th>Status</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(po, index) in pos" :key="po.id">
-                          <td>{{ index + 1 }}</td>
-                          <td>PO - {{ po.po_no }}</td>
-                          <td>MR - {{ po.mr_no }}</td>
-                          <td>{{ po.net_amount }}</td>
-
-                          <td>{{ po.date }}</td>
-
-                          <td v-if="editId === po.id">
-                            <select v-model="po.supplier" class="form-control form-control-sm">
-                              <option value="">Select</option>
-                              <option v-for="cat in suppliers" :key="cat">{{ cat }}</option>
-                            </select>
-                          </td>
-                          <td v-else>{{ po.supplier }}</td>
-
-                          <td v-if="editId === po.id">
-                            <input v-model="po.requestBy" disabled class="form-control form-control-sm" />
-                          </td>
-                          <td v-else>{{ po.requestBy }}</td>
-    
-                          <td v-if="editId === po.id">
-                            <input v-model="po.assignedBy" disabled class="form-control form-control-sm" />
-                          </td>
-                          <td v-else>{{ po.assignedBy }}</td>
-                          <td>
-                            <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
-                            <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
-                            <span v-else class="badge badge-danger">Rejected</span>
-                          </td>
-                          <td>
-                            <!-- Buttons -->
-                          <!-- Buttons visible only for Pending or Rejected -->
-                          <button v-if="po.status === '0' || po.status === '1'" 
-                                  class="btn btn-success btn-sm" 
-                                  :data-target="'#' + formID" 
-                                  data-toggle="modal" 
-                                  @click="clearForm">
-                            <i class="fas fa-check"></i>
-                          </button>
-
-                          <button v-if="po.status === '0' || po.status === '1'" 
-                                  class="btn btn-danger btn-sm mx-1" 
-                                  data-toggle="modal" 
-                                  data-target="#actionConfirmModal" 
-                                  @click="openModal('reject', po.id)">
-                            <i class="fas fa-times"></i>
-                          </button>  
-                            <button class="btn btn-danger btn-sm mx-1" data-toggle="modal" data-target="#actionConfirmModal" @click="openModal('delete', po.id)">
-                              <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewMRModal" @click="viewMR(po.id)">
-                              <i class="fas fa-eye"></i>
-                            </button>
-                          </td>
-                        </tr>
-                        <tr v-if="pos.length == 0">
-                          <p class="text-center">No Purchase Orders Found</p>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
             </div>
             <!-- BID TABLE -->
-            <div class="col-12" v-if="activeTab === 'bid'">
+            <div class="col-12" v-if="activeTab === 'bids'">
             <div class="card card-primary">
               <div class="card-header">
                 <h4>Bid Summaries  <span class="badge badge-primary ml-1">{{ bids.length }}</span></h4>
@@ -198,12 +161,12 @@
                                 <span class="mb-1 fw-semibold mr-2">
                                   {{ getRate(product, supplier.id).toLocaleString() }}
                                 </span>
-                                <input
-                                  type="checkbox"
-                                  class="checkbox-custom"
-                                  v-model="selectedDetails"
-                                  :value="getDetailId(product, supplier.id)"
-                                />
+                                  <input
+                                      type="checkbox"
+                                      class="checkbox-custom"
+                                      v-model="selectedDetails"
+                                      :value="getDetailId(product, supplier.id)"
+                                  />
                               </div>
                               <span v-else class="text-muted">—</span>
                             </td>
@@ -420,18 +383,18 @@
     },
     methods: {
       async fetchBid_PO() {
-        try {
-          const response = await this.callApi('post', 'pos'); // API call to your controller
-          if (response.data.success) {
-            this.bids      = response.data.bids || [];
-            this.suppliers = response.data.suppliers || [];
-            this.products  = response.data.products || [];
-            this.pos       = response.data.pos || [];
-          }
-        } catch (error) {
-          console.error('Failed to fetch data:', error);
-        }
-      },
+            try {
+                const response = await this.callApi('post', 'pos'); // API call to your controller
+                if (response.data.success) {
+                    this.bids      = response.data.bids || [];
+                    this.suppliers = response.data.suppliers || [];
+                    this.products  = response.data.products || [];
+                    this.pos       = response.data.pos || [];
+                }
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            }
+        }, 
       clearForm() {
         this.data = {
           product_name: '',
@@ -526,18 +489,14 @@
           this.$emit('error', 'Please select at least one bid detail.');
           return;
         }
-
         this.loading = true;
-
         const payload = {
           bid_detail_ids: this.selectedDetails
-        };
-
+        }; 
         try {
           const response = await this.callApi('post', 'pos/store', payload);
-          
           if (response.status === 200 || response.status === 201) {
-            this.success = 'Purchase Order created successfully!';
+            this.success = 'Purchase Orders created successfully!';
             this.selectedDetails = [];
             this.$emit('close');
             $('#BidModal').modal('hide');
@@ -546,11 +505,22 @@
           }
         } catch (err) {
           console.error(err);
-          this.$emit('error', 'Failed to create Purchase Order');
+          this.$emit('error', 'Failed to create Purchase Orders');
         } finally {
           this.loading = false;
         }
       },
+      async viewPO(id) {
+        try { 
+            const response = await this.callApi('post', 'po/show', payload);
+            if (response.data.success) {
+                this.selectedPO = response.data.po;
+                $('#viewPOModal').modal('show'); // show modal manually
+            }
+        } catch (error) {
+            console.error('Error fetching PO details:', error);
+        }
+      }
     }
   };
   </script>
