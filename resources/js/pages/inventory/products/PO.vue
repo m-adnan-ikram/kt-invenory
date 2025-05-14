@@ -17,7 +17,7 @@
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> 
             <!-- POs Table -->
             <div class="col-12" v-if="activeTab === 'pos'">
               <div class="card card-primary">
@@ -27,47 +27,50 @@
                 <div class="card-body">
                   <div class="table-responsive">
                     <table class="table table-striped table-hover">
-                    <thead>
-                      <tr>
-                        <th>Sr No.</th>
-                        <th>PRN #</th>
-                        <th>MR #</th>
-                        <th>Request By</th>
-                        <th>PO (BID #)</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <template v-for="(group, index) in posGroupedByPRN" :key="group.prn_id">
+                      <thead>
                         <tr>
-                          <td>{{ index + 1 }}</td>
-                          <td>{{ group.prn_no }}</td>
-                          <td>{{ group.mr_no }}</td>
-                          <td>{{ group.requested_by }}</td>
-                          <td>
-                            BID - {{ group.pos[0]?.bid_id || 'N/A' }}
-                            <span v-if="group.pos.length > 1" class="badge badge-info ml-2">{{ group.pos.length }} POs</span>
-                          </td>
-                          <td>{{ new Date(group.pos[0]?.created_at).toLocaleString() }}</td>
-                          <td>
-                            <span v-if="group.pos[0]?.status == '2'" class="badge badge-success">Approved</span>
-                            <span v-else-if="group.pos[0]?.status == '1'" class="badge badge-warning">Processing</span>
-                            <span v-else class="badge badge-danger">Rejected</span>
-                          </td>
-                          <td>
-                            <button class="btn btn-info btn-sm" @click="viewPOByPRN(group.prn_id, group)">
-                              <i class="fas fa-eye"></i> View
-                            </button>
-                          </td>
+                          <th>Sr No.</th>
+                          <th>PO #</th>
+                          <th>PRN #</th>
+                          <th>MR #</th>
+                          <th>Request By</th>
+                          <th>BID #</th>
+                          <th>Date</th>
+                          <th>Grand Total</th>
+                          <th>Supplier Name</th>
+                          <th>Status</th>
+                          <th>Action</th>
                         </tr>
-                      </template>
-                      <tr v-if="posGroupedByPRN.length === 0">
-                        <td colspan="8" class="text-center">No Purchase Orders Found</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        <template v-for="(po, index) in pos" :key="po.id">
+                          <tr>
+                            <td>{{ index + 1 }}</td>
+                            <td>PO - {{ po.id }}</td>
+                            <td>{{ po.prn_id }}</td>
+                            <td>{{ po.mr_id }}</td>
+                            <td>{{ po.mr.requested_by_user.name }}</td>
+                            <td>BID - {{ po.bid_id }}</td>
+                            <td>{{ new Date(po.created_at).toLocaleString() }}</td>
+                            <th>{{ po.total }} PKR</th>
+                            <td>{{ po.supplier.name }} PKR</td>
+                            <td>
+                              <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
+                              <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
+                              <span v-else class="badge badge-danger">Rejected</span>
+                            </td>
+                            <td>
+                              <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
+                                <i class="fas fa-eye"></i> View
+                              </button>
+                            </td>
+                          </tr>
+                        </template>
+                        <tr v-if="pos.length === 0">
+                          <td colspan="9" class="text-center">No Purchase Orders Found</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -275,8 +278,8 @@
           </div>
         </div>
         <!-- POs Modal --> 
-        <div class="modal fade" id="viewPOModal" tabindex="-1" role="dialog" v-if="selectedPOs.length">
-          <div class="modal-dialog modal-xl" role="document">
+        <div class="modal fade" id="viewPOModal" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-xl" role="document" v-if="selectedPOs.length">
             <div class="modal-content">
               <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title p-2">
@@ -501,7 +504,7 @@
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             }
-      }, 
+      },
       clearForm() {
         this.data = {
           product_name: '',
@@ -617,16 +620,13 @@
           this.loading = false;
         }
       },
-      async viewPOByPRN(prn_id, group = null) {
+      async viewPODetail(po_id) {
         try {
           // Fetch the PO data for the given PRN ID
-          const response = await this.callApi('post', 'pos/show', { prn_id });
-          
+          const response = await this.callApi('post', 'pos/show', { po_id });
           if (response.data.success) {
             // Update the selectedPOs and selectedGroup
             this.selectedPOs = response.data.pos;
-            this.selectedGroup = group; // store extra info if needed
-
             // Add a slight delay before showing the modal to ensure the DOM is updated
             setTimeout(() => {
               $('#viewPOModal').modal('show');

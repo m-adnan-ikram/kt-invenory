@@ -276,7 +276,7 @@
             </div>
             <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
               <label class="w-50"><h6>Grand Total</h6></label>
-              <h5 id="grandTotal" class="text-right w-50">{{ item.grand_total }} PKR</h5>
+              <h5 id="grandTotal" class="text-right w-50">{{ item.total_amount }} PKR</h5>
             </div>
             </div> 
             <!-- Add / Remove Bidders -->
@@ -408,7 +408,7 @@
                     </div>
                     <div class="form-group col-md-12 d-flex p-0 m-0 mt-2">
                       <label class="w-50"><h6>Grand Total</h6></label>
-                      <h5 class="text-right w-50">{{ item.grand_total }} PKR</h5>
+                      <h5 class="text-right w-50">{{ item.total_amount }} PKR</h5>
                     </div>
                   </div>
                   <div class="form-group col-md-12 d-flex justify-content-end">
@@ -436,7 +436,7 @@
                         <i class="fas fa-times"></i> Cancel
                       </button>
                       <button class="btn btn-sm btn-success mr-2" @click="updateBid(item, bIndex)">
-                        <i class="fas fa-save"></i> Save
+                        <i class="fas fa-save"></i> Update
                       </button>
                     </template>
                     <template v-else>
@@ -444,7 +444,8 @@
                         <i class="fas fa-edit"></i> Edit
                       </button>
                     </template>
-                    <button v-if="selectedPRNStatus == '1'" class="btn btn-sm btn-danger" @click="deleteBid(item.id, bIndex)">
+                    <button v-if="selectedPRNStatus == '1'" class="btn btn-sm btn-danger"
+                      @click="confirmDeleteBid(item.id, bIndex)" >
                       <i class="fas fa-trash"></i> Delete
                     </button>
                   </span>
@@ -481,9 +482,56 @@
                     </tbody>
                   </table>
                   <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
-                  
                   <!-- Editable fields for bid -->
-                  <div class="col-md-4 d-flex"><strong>Advance %:</strong>
+                  <div class="col-md-12 d-flex my-2 bg-light"><strong>Terms Condition:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2" v-model.number="item.terms_condition">
+                    </template>
+                    <template v-else>
+                      {{ item.terms_condition }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Contact Person:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2 border" v-model.number="item.contact_person">
+                    </template>
+                    <template v-else>
+                      {{ item.contact_person }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Contact Person Contact:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2" v-model.number="item.contact_person_contact">
+                    </template>
+                    <template v-else>
+                      {{ item.contact_person_contact }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Quotation Ref:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2" v-model.number="item.quotation_ref">
+                    </template>
+                    <template v-else>
+                      {{ item.quotation_ref }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Quotation Date:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2" v-model.number="item.Quotation_date">
+                    </template>
+                    <template v-else>
+                      {{ item.quotation_date }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Credit Days:</strong>
+                    <template v-if="item.isEditing">
+                      <input type="text" class="form-control ml-2" v-model.number="item.credit_days">
+                    </template>
+                    <template v-else>
+                      {{ item.credit_days }}
+                    </template>
+                  </div>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>Advance %:</strong>
                     <template v-if="item.isEditing">
                       <input type="number" class="form-control ml-2" v-model.number="item.advance">
                     </template>
@@ -491,16 +539,66 @@
                       {{ item.advance }}
                     </template>
                   </div>
-                  <div class="col-md-4 d-flex"><strong>Discount:</strong>
+                  <div class="col-md-3 d-flex my-2 bg-light"><strong>After Delivery %:</strong>
                     <template v-if="item.isEditing">
-                      <input type="number" class="form-control ml-2" v-model.number="item.discount" @input="updateTotal(item)">
+                      <input type="number" class="form-control ml-2" v-model.number="item.after_delivery">
+                    </template>
+                    <template v-else>
+                      {{ item.after_delivery }}
+                    </template>
+                  </div>
+                  <!-- Tax Input -->
+                  <div class="col-md-4 d-flex my-2 bg-light">
+                    <strong>Tax:</strong>
+                    <template v-if="item.isEditing">
+                      <input
+                        type="number"
+                        class="form-control ml-2"
+                        v-model.number="item.tax"
+                        @input="calculateGrandTotal(item)"
+                      />
+                    </template>
+                    <template v-else>
+                      {{ item.tax }}
+                    </template>
+                  </div>
+                  <!-- Delivery Charges Input -->
+                  <div class="col-md-4 d-flex my-2 bg-light">
+                    <strong>Delivery Charges:</strong>
+                    <template v-if="item.isEditing">
+                      <input
+                        type="number"
+                        class="form-control ml-2"
+                        v-model.number="item.delivery_charges"
+                        @input="calculateGrandTotal(item)"
+                      />
+                    </template>
+                    <template v-else>
+                      {{ item.delivery_charges }}
+                    </template>
+                  </div>
+                  <!-- Discount Input -->
+                  <div class="col-md-4 d-flex my-2 bg-light">
+                    <strong>Discount:</strong>
+                    <template v-if="item.isEditing">
+                      <input
+                        type="number"
+                        class="form-control ml-2"
+                        v-model.number="item.discount"
+                        @input="calculateGrandTotal(item)"
+                      />
                     </template>
                     <template v-else>
                       {{ item.discount }}
                     </template>
                   </div>
-
-                  <div class="col-md-12 text-right mt-2"><h6><strong>Grand Total:</strong> {{ item.grand_total }}</h6></div>
+                  <!-- Grand Total Display -->
+                  <div class="col-md-12 text-right mt-2">
+                    <h6>
+                      <strong>Grand Total:</strong> {{ item.total_amount }}
+                    </h6>
+                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -525,7 +623,7 @@
 import Add from '../../../components/Add.vue';
 import AddSupplierModal from '../modal/addSupplierModal.vue';
 import AddProductModal from '../modal/addProductsModal.vue';
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2'; 
 
 export default {
   name: "BidSummaryManager",
@@ -582,7 +680,7 @@ export default {
         advance_amount: 0,
         after_delivery_amount: 0,
         sub_total: 0,
-        grand_total: 0,
+        total_amount: 0,
         supplier_id: '',
         quotation_ref: '',
         quotation_date: '', 
@@ -664,7 +762,7 @@ export default {
           advance_percent: row.advance_percent,
           advance_amount: row.advance_amount,
           after_delivery_percent: row.after_delivery_percent,
-          after_delivery_amount: row.after_delivery_amount,
+          after_delivery_amount:  row.after_delivery_amount,
           credit_days: row.credit_days,
           discount: row.discount,
           delivery_charges: row.delivery_charges,
@@ -673,7 +771,7 @@ export default {
           terms_condition: row.terms,
           tax: row.tax,
           sub_total: row.sub_total,
-          grand_total: row.grand_total,
+          total_amount: row.total_amount,
           products: row.products.map(product => ({
             product_id: product.product_id,
             rate: product.rate,
@@ -700,7 +798,7 @@ export default {
         });
       }
      }, 
-     async createNewBid() {
+    async createNewBid() {
       try {
         const payload = {
           prn_id: this.selectedPRNId,
@@ -721,7 +819,7 @@ export default {
             terms_condition: row.terms,
             tax: row.tax,
             sub_total: row.sub_total,
-            grand_total: row.grand_total,
+            total_amount: row.total_amount,
             products: row.products.map(product => ({
               product_id: product.product_id,
               rate: product.rate,
@@ -730,12 +828,15 @@ export default {
           }))
         };
         const response = await this.callApi('post', 'bid-summaries/store', payload);
+        const newBid = response.data; // Assuming this is the new bid data
+        this.uniquePRNBids.push(newBid); // Assuming this is the array that holds the bid data
         Swal.fire({
           icon: 'success',
           title: 'Success',
           text: 'Bid Summary submitted successfully!'
         });
         this.fetchBid_PRN();
+        this.viewBidsByPRN(this.selectedPRNId);
         this.clearForm(); 
         this.newBidFormRows = [];
       } catch (error) {
@@ -745,6 +846,7 @@ export default {
           title: 'Error',
           text: error?.response?.data?.message || 'Submission failed.'
         });
+        
       }
     },
     addRow() {
@@ -757,7 +859,7 @@ export default {
           advance_amount: 0,
           after_delivery_amount: 0,
           sub_total: 0,
-          grand_total: 0,
+          total_amount: 0,
           supplier_id: '',
           quotation_ref: '',
           quotation_date: '',
@@ -782,6 +884,45 @@ export default {
     removeRow(index) {
       this.bidFormRows.splice(index, 1);
      },
+     addNewBid() {
+      const selectedPRN = this.groupedBids[0]?.prn;
+      // ✅ Set PRN and MR ID here
+      this.selectedPRNId = selectedPRN.id;
+      this.selectedMRId = selectedPRN.mr_id;
+      const newBid = {
+        id: Date.now(),
+        advance_amount: 0,
+        after_delivery_amount: 0,
+        sub_total: 0,
+        total_amount: 0,
+        supplier_id: '',
+        quotation_ref: '',
+        quotation_date: '',
+        advance_percent: '',
+        after_delivery_percent: '',
+        credit_days: '',
+        discount: '',
+        delivery_charges: '',
+        contact_person: '',
+        contact_person_contact: '',
+        terms: '',
+        tax: '',
+        products: this.groupedBids[0].details.map(detail => ({
+          product_id: detail.product_id,
+          name: detail.product?.name,
+          qty: detail.qty,
+          rate: 0,
+          total: 0,
+        })),
+      };
+      this.newBidFormRows.push(newBid);
+     },
+    removeRow(index) {
+        this.newBidFormRows.splice(index, 1);
+        if (this.newBidFormRows.length === 0) {
+          this.newBidFormRows = [];
+        }
+     },
     openBidModal(prn) {
         this.selectedPRN = prn;
         this.clearForm(); // Clears existing form rows
@@ -805,7 +946,7 @@ export default {
               advance_amount: 0,
               after_delivery_amount: 0,
               sub_total: 0,
-              grand_total: 0,
+              total_amount: 0,
               supplier_id: '',
               quotation_ref: '',
               quotation_date: '',
@@ -840,7 +981,7 @@ export default {
             advance_amount: 0,
             after_delivery_amount: 0,
             sub_total: 0,
-            grand_total: 0,
+            total_amount: 0,
             supplier_id: '',
             quotation_ref: '',
             quotation_date: '', 
@@ -869,9 +1010,11 @@ export default {
       try {
         const res = await this.callApi('post', 'bid-summaries/show', payload);
         if (res.data.success) {
+          console.log(res.data);
+          
           this.groupedBids = res.data.bids_by_prn; // result will be an array of PRN objects with their bids
           const selectedBid = this.uniquePRNBids.find(bid => bid.prn?.id === prnId);
-         this.selectedPRNStatus = selectedBid?.status;  
+          this.selectedPRNStatus = selectedBid?.status;  
           this.$nextTick(() => {
             $('#viewBidModal').modal('show');
           });
@@ -921,65 +1064,139 @@ export default {
 
       item.sub_total = parseFloat(subTotal.toFixed(2));
      },
-    // Calculates grand total with tax, delivery, and discount
-    calculateGrandTotal(item) {
-      const sub = parseFloat(item.sub_total) || 0;
-      const tax = parseFloat(item.tax) || 0;
-      const discount = parseFloat(item.discount) || 0;
-      const delivery = parseFloat(item.delivery_charges) || 0;
-
-      const total = sub + tax + delivery - discount;
-      item.grand_total = parseFloat(total.toFixed(2));
-     },
     getSubtotal(details) {
-      if (!Array.isArray(details)) return 0;
-      return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+       if (!Array.isArray(details)) return 0;
+       return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
      },
+    async updateBid(item, index) {
+        try {
+          // Step 1: Calculate sub_total
+          const sub_total = item.details.reduce((sum, detail) => {
+            const qty = parseFloat(detail.qty) || 0;
+            const rate = parseFloat(detail.rate) || 0;
+            detail.total = qty * rate;
+            return sum + detail.total;
+          }, 0);
+          const tax = parseFloat(item.tax) || 0;
+          const discount = parseFloat(item.discount) || 0;
+          const delivery = parseFloat(item.delivery_charges) || 0;
+          const total_amount = parseFloat((sub_total + tax + delivery - discount).toFixed(2));
+          // Step 2: Prepare payload for API
+          const payload = {
+            id: item.id,
+            supplier_id: item.supplier_id,
+            contact_person: item.contact_person,
+            contact_person_contact: item.contact_person_contact,
+            quotation_ref: item.quotation_ref,
+            quotation_date: item.quotation_date,
+            credit_days: item.credit_days,
+            advance_percent: item.advance ?? item.advance_percent ?? 0,
+            after_delivery_percent: item.after_delivery ?? item.after_delivery_percent ?? 0,
+            terms_condition: item.terms || item.terms_condition || '',
+            discount: discount,
+            tax: tax,
+            delivery_charges: delivery,
+            sub_total: sub_total,
+            total_amount: total_amount,
+            details: item.details.map(detail => ({
+              product_id: detail.product_id || detail.product?.id || null,
+              qty: detail.qty,
+              rate: detail.rate,
+              total: detail.total,
+            })),
+          };
+
+          // Step 3: API call
+          const response = await this.callApi('post', 'bid-summaries/update', payload);
+          // Step 4: Handle response
+          if (response.status == 200) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: 'Bid updated successfully.',
+              confirmButtonText: 'OK',
+            });
+            item.isEditing = false; 
+            this.fetchBid_PRN(); 
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Update Failed',
+              text: response.data?.message || 'Failed to update bid.',
+            });
+          }
+        } catch (error) {
+          console.error(error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.response?.data?.details || 'An error occurred while updating the bid.',
+          });
+        }
+     },
+    calculateGrandTotal(item) {
+        if (Array.isArray(item.details)) {
+            item.sub_total = item.details.reduce((sum, detail) => {
+              const qty = parseFloat(detail.qty) || 0;
+              const rate = parseFloat(detail.rate) || 0;
+              return sum + (qty * rate);
+            }, 0);
+          }
+        const sub = parseFloat(item.sub_total) || 0;
+        const tax = parseFloat(item.tax) || 0;
+        const discount = parseFloat(item.discount) || 0;
+        const delivery = parseFloat(item.delivery_charges) || 0;
+  
+        const total = sub + tax + delivery - discount;
+        item.total_amount = parseFloat(total.toFixed(2));
+     },
+     async confirmDeleteBid(bidId, index) {
+      const confirm = await Swal.fire({
+        title: 'Are you sure?',
+        text: 'This bid will be permanently deleted!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!',
+      });
+
+      if (confirm.isConfirmed) {
+        try {
+          const payload = { id: bidId };
+          const response = await this.callApi('post', 'bid-summaries/delete', payload);
+          const deletedPRNId = response.data.prn_id;  
+          if (response.status == 200) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Deleted!',
+              text: 'Bid has been deleted successfully.',
+            }); 
+            this.fetchBid_PRN();  
+            await this.viewBidsByPRN(deletedPRNId);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Delete Failed',
+              text: response.data?.message || 'Could not delete bid.',
+            });
+          }
+        } catch (error) {
+          console.error(error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: error.response?.data?.details || 'An error occurred during deletion.',
+          });
+        }
+      }
+    },
     loadTinyMCE() {
       const script = document.createElement('script');
       script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
       script.referrerPolicy = "origin";
       document.head.appendChild(script);
-     },
-     addNewBid() {
-      const selectedPRN = this.groupedBids[0]?.prn;
-      // ✅ Set PRN and MR ID here
-      this.selectedPRNId = selectedPRN.id;
-      this.selectedMRId = selectedPRN.mr_id;
-      const newBid = {
-        id: Date.now(),
-        advance_amount: 0,
-        after_delivery_amount: 0,
-        sub_total: 0,
-        grand_total: 0,
-        supplier_id: '',
-        quotation_ref: '',
-        quotation_date: '',
-        advance_percent: '',
-        after_delivery_percent: '',
-        credit_days: '',
-        discount: '',
-        delivery_charges: '',
-        contact_person: '',
-        contact_person_contact: '',
-        terms: '',
-        tax: '',
-        products: this.groupedBids[0].details.map(detail => ({
-          product_id: detail.product_id,
-          name: detail.product?.name,
-          qty: detail.qty,
-          rate: 0,
-          total: 0,
-        })),
-      };
-      this.newBidFormRows.push(newBid);
-    },
-    removeRow(index) {
-        this.newBidFormRows.splice(index, 1);
-        if (this.newBidFormRows.length === 0) {
-          this.newBidFormRows = [];
-        }
-     }
+     }, 
   }
 };
 </script>
