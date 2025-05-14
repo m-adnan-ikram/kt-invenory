@@ -17,15 +17,14 @@ class PurchaseOrderController extends Controller
     //
     public function index()
     {
-        // Only fetch POs with status == 1
-        $pos = PurchaseOrder::with([
+         // Only fetch POs with status == 1
+          $pos = PurchaseOrder::with([
             'supplier',
-            'mr.requestedByUser', // ensure this is working
+            'mr.requestedByUser', 
             'prn',
-        ])
-        ->where('status', 1)
-        ->latest()
-        ->get();        
+          ])  
+          ->latest()
+          ->get();        
         $bids = BidSummary::with([
             'supplier',
             'prn.details.product',
@@ -154,15 +153,15 @@ class PurchaseOrderController extends Controller
     }
     public function show(Request $request)
     {
-        $prnId = $request->prn_id;
+        $poId = $request->po_id;
         // Fetch all POs relted to this PRN
-     $pos = PurchaseOrder::with([
+       $pos = PurchaseOrder::with([
             'supplier',
             'poDetails.product',
             'mr.requestedByUser',
             'prn',
         ])
-        ->where('prn_id', $prnId)
+        ->where('id', $poId)
         ->get();
 
         if ($pos->isEmpty()) {
@@ -176,4 +175,35 @@ class PurchaseOrderController extends Controller
             'pos' => $pos,
         ]);
     }
+    public function getSingle(Request $request)
+    {
+        $po = PurchaseOrder::with('poDetails.product')
+            ->where('id', $request->po_id)
+            ->first();
+
+        if (!$po) {
+            return response()->json([
+                'success' => false,
+                'message' => 'PO not found.',
+            ], 404);
+        }
+
+        // Format for Vue (flatten poDetails into products list)
+        $products = $po->poDetails->map(function ($item) {
+            return [
+                'product_name' => $item->product->name ?? 'N/A',
+                'qty' => $item->qty,
+                'alreadey_received_qty' => $item->received_qty ?? 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'po' => [
+                'id' => $po->id,
+                'products' => $products,
+            ]
+        ]);
+    }
+
 }

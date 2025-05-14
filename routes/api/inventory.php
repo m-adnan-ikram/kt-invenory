@@ -7,15 +7,21 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductUnitController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequisitionNoteController;
+use App\Http\Controllers\StockInwardController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
-
+// Stock Inward
+Route::middleware(['auth:sanctum'])->prefix('web/v1/inward')->group(function () {
+    Route::post('/', [StockInwardController::class, 'index']);    
+    Route::post('store', [StockInwardController::class, 'store']);    
+});
 // POs
 Route::middleware(['auth:sanctum'])->prefix('web/v1/pos')->group(function () {
     Route::post('/', [PurchaseOrderController::class, 'index']);          
     Route::post('store', [PurchaseOrderController::class, 'store']);  
     Route::post('show', [PurchaseOrderController::class, 'show']);  
+    Route::post('getSingle', [PurchaseOrderController::class, 'getSingle']);  
 });
 // Bid Summaries
 Route::middleware(['auth:sanctum'])->prefix('web/v1/bid-summaries')->group(function () {
@@ -23,6 +29,8 @@ Route::middleware(['auth:sanctum'])->prefix('web/v1/bid-summaries')->group(funct
     Route::post('store', [BidSummariesController::class, 'store']);       
     Route::post('/show', [BidSummariesController::class, 'show']);
     Route::post('/compareBids', [BidSummariesController::class, 'compareBid']);
+    Route::post('update', [BidSummariesController::class, 'update']);   
+    Route::post('delete', [BidSummariesController::class, 'delete']);   
 });
 // PRN
 Route::middleware(['auth:sanctum'])->prefix('web/v1/prn')->group(function () {

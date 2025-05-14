@@ -23,7 +23,9 @@ class CreateBidSummariesTable extends Migration
             $table->decimal('total', 10, 2);
             $table->decimal('tax', 10, 2);
             $table->decimal('advance', 10, 2);
+            $table->decimal('advance_amount', 10, 2);
             $table->decimal('after_delivery', 10, 2);
+            $table->decimal('after_delivery_amount', 10, 2);
             $table->integer('credit_days');
             $table->decimal('discount', 10, 2);
             $table->decimal('delivery_charges', 10, 2);

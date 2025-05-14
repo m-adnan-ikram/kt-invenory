@@ -14,8 +14,7 @@ use Illuminate\Support\Facades\Log;
 class BidSummariesController extends Controller
 {
     //
-    public function index()
-    {
+    public function index(){
         $prns = PurchaseRequisitionNote::with([
             'mr.requestedByUser',
             'details.product'
@@ -43,9 +42,8 @@ class BidSummariesController extends Controller
             'products'  => $products,
         ]);
     }
-   public function store(Request $request)
-    { 
-        DB::beginTransaction();
+   public function store(Request $request){ 
+    DB::beginTransaction();
         try {
             foreach ($request->suppliers ?? [] as $supplier) {
                 $products = $supplier['products'] ?? [];
@@ -70,11 +68,13 @@ class BidSummariesController extends Controller
                     'prn_id'                  => $request->prn_id,
                     'mr_id'                   => $request->mr_id,
                     'supplier_id'             => $supplier['supplier_id'],
-                    'total_amount'            => $subTotal,
-                    'total'                   => $grandTotal,
+                    'total'                   => $subTotal,
+                    'total_amount'            => $grandTotal,
                     'tax'                     => $totalTax,
                     'advance'                 => $advanceAmount,
-                    'after_delivery'          => $afterDeliveryAmount,
+                    'advance_amount'          => $advancePercent,
+                    'after_delivery'          => $afterDeliveryPercent,
+                    'after_delivery_amount'   => $afterDeliveryAmount,
                     'credit_days'             => $supplier['credit_days'],
                     'discount'                => $totalDiscount,
                     'delivery_charges'        => $totalDelivery,
@@ -121,7 +121,6 @@ class BidSummariesController extends Controller
                 ], 500);
           }
     }
-
     // Compare bids function
     public function compareBid(Request $request)
     {
@@ -164,4 +163,130 @@ class BidSummariesController extends Controller
             'bids_by_prn' => $grouped
         ]);
     }
+    // Update Bid
+    public function update(Request $request)
+    {
+        $validated = $request->validate([
+            'id'             => 'required',
+            'supplier_id'    => 'required|exists:suppliers,id',
+            'contact_person' => 'nullable|string|max:255',
+            'contact_person_contact' => 'nullable|string|max:255',
+            'quotation_ref'   => 'nullable|string|max:255',
+            'quotation_date'  => 'nullable|date',
+            'credit_days'     => 'nullable|integer',
+            'advance_percent' => 'nullable|numeric',
+            'after_delivery_percent' => 'nullable|numeric',
+            'terms_condition' => 'nullable|string',
+            'discount'        => 'nullable|numeric',
+            'tax'             => 'nullable|numeric',
+            'delivery_charges' => 'nullable|numeric',
+            'details'         => 'required|array|min:1',
+            'details.*.product_id' => 'required|exists:products,id',
+            'details.*.qty'   => 'required|numeric|min:0',
+            'details.*.rate'  => 'required|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+             $summary = BidSummary::findOrFail($validated['id']); 
+            $products = $validated['details'];
+
+            // Calculate subtotal
+            $subTotal = collect($products)->reduce(function ($carry, $product) {
+                return $carry + ($product['rate'] * $product['qty']);
+            }, 0);
+
+            $totalTax = (float) ($validated['tax'] ?? 0);
+            $totalDiscount = (float) ($validated['discount'] ?? 0);
+            $totalDelivery = (float) ($validated['delivery_charges'] ?? 0);
+            $grandTotal = $subTotal + $totalTax + $totalDelivery - $totalDiscount;
+
+            $advancePercent = $validated['advance_percent'] ?? 0;
+            $afterDeliveryPercent = $validated['after_delivery_percent'] ?? 0;
+            $advanceAmount = ($advancePercent / 100) * $grandTotal;
+            $afterDeliveryAmount = ($afterDeliveryPercent / 100) * $grandTotal;
+
+            // Update Bid Summary
+            $summary->update([  
+                'total' => $subTotal,
+                'total_amount' => $grandTotal,
+                'tax' => $totalTax,
+                'advance' => $advancePercent,
+                'advance_amount' => $advanceAmount,
+                'after_delivery' => $afterDeliveryPercent,
+                'after_delivery_amount' => $afterDeliveryAmount,
+                'credit_days' => $validated['credit_days'],
+                'discount' => $totalDiscount,
+                'delivery_charges' => $totalDelivery,
+                'contact_person' => $validated['contact_person'],
+                'contact_person_contact' => $validated['contact_person_contact'],
+                'terms_condition' => $validated['terms_condition'],
+                'quotation_ref' => $validated['quotation_ref'],
+                'quotation_date' => $validated['quotation_date'] ?? now(),
+            ]);
+
+            // Delete old BidDetails
+            BidDetail::where('bid_id', $summary->id)->delete();
+
+            // Insert new BidDetails
+            foreach ($products as $product) {
+                $rate = $product['rate'];
+                $qty = $product['qty'];
+                $total = $rate * $qty;
+                $ratio = $subTotal > 0 ? $total / $subTotal : 0;
+
+                $discountShare = $ratio * $totalDiscount;
+                $taxShare = $ratio * $totalTax;
+                $deliveryShare = $ratio * $totalDelivery;
+                $netAmount = $total + $taxShare + $deliveryShare - $discountShare;
+
+                BidDetail::create([
+                    'bid_id' => $summary->id,
+                    'product_id' => $product['product_id'],
+                    'qty' => $qty,
+                    'rate' => $rate,
+                    'total' => $total,
+                    'discount' => round($discountShare, 2),
+                    'delivery_charges' => round($deliveryShare, 2),
+                    'tax' => round($taxShare, 2),
+                    'net_amount' => round($netAmount, 2),
+                ]);
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Bid updated successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Update failed.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function delete(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:bid_summaries,id',
+        ]);
+        DB::beginTransaction();
+        try {
+            $bid = BidSummary::findOrFail($request->id);
+            $prnId = $bid->prn_id;
+
+            // Also delete related bid details if necessary
+            $bid->details()->delete();
+            $bid->delete();
+            DB::commit();
+            return response()->json([
+                'message' => 'Bid deleted successfully.',
+                'prn_id' => $prnId,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Failed to delete bid.', 'error' => $e->getMessage()], 500);
+        }
+    }
+    
+    
+
 }
