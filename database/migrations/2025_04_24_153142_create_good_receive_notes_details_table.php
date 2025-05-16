@@ -12,8 +12,8 @@ class CreateGoodReceiveNotesDetailsTable extends Migration
      * @return void
      */
     public function up()
-    {
-        Schema::create('good_receive_notes_details', function (Blueprint $table) {
+    { 
+        Schema::create('good_receive_note_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('good_receive_note_id')->constrained('good_receive_notes');
             $table->foreignId('product_id')->constrained('products');

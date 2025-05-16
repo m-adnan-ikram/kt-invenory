@@ -179,31 +179,33 @@ class PurchaseOrderController extends Controller
     {
         $po = PurchaseOrder::with('poDetails.product')
             ->where('id', $request->po_id)
-            ->first();
-
+            ->first(); 
+    
         if (!$po) {
             return response()->json([
                 'success' => false,
                 'message' => 'PO not found.',
             ], 404);
         }
-
-        // Format for Vue (flatten poDetails into products list)
+    
+        // Format the product list for Vue
         $products = $po->poDetails->map(function ($item) {
             return [
-                'product_name' => $item->product->name ?? 'N/A',
-                'qty' => $item->qty,
-                'alreadey_received_qty' => $item->received_qty ?? 0,
+                'product_id'            => $item->product_id,
+                'product_name'          => $item->product->name ?? 'N/A',
+                'qty'                   => $item->qty, // Receivable Quantity
+                'already_received_qty'  => $item->store_received ?? 0, // Already Received
             ];
         });
-
+    
         return response()->json([
             'success' => true,
             'po' => [
-                'id' => $po->id,
-                'products' => $products,
+                'id'       => $po->id,
+                'products' => $products
             ]
         ]);
     }
+    
 
 }

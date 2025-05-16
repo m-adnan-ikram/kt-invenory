@@ -43,6 +43,13 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
-
+    // PurchaseOrder.php
+    public function purchaseOrderDetails()
+    {
+        return $this->hasMany(PurchaseOrderDetail::class);
+    } 
+    public function goodReceiveNotes() {
+        return $this->hasMany(GoodReceiveNote::class, 'po_id');
+    }  
 }
 

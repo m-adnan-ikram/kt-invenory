@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Route;
 // Stock Inward
 Route::middleware(['auth:sanctum'])->prefix('web/v1/inward')->group(function () {
     Route::post('/', [StockInwardController::class, 'index']);    
-    Route::post('store', [StockInwardController::class, 'store']);    
+    Route::post('store', [StockInwardController::class, 'store']);
+    Route::post('/get-inward-details', [StockInwardController::class, 'getInwardDetails']);
 });
 // POs
 Route::middleware(['auth:sanctum'])->prefix('web/v1/pos')->group(function () {
