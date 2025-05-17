@@ -16,7 +16,7 @@ class CreateMaterialRequestsTable extends Migration
         Schema::create('material_requests', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('requested_by');
-            $table->string('status'); // 0 = Rejected, 1 = Proccessing,  2 = Issued, 3 = PRN Generated 
+            $table->string('status'); // 0 = Rejected, 1 = Proccessing,  2 = Issued, 3 = PRN Generated  
             $table->timestamps();
         });
     }

@@ -11,13 +11,20 @@ class ProductUnitController extends Controller
     //
     public function index()
     {
-        $units = ProductUnit::get();
+        $units = ProductUnit::withCount('products')
+            ->get()
+            ->map(function ($unit) {
+                $unit->is_deletable = $unit->products_count == 0;
+                return $unit;
+            });
+
         return response()->json([
             'success' => true,
             'message' => 'Units fetched successfully.',
             'data'    => $units,
         ], 200);
     }
+
     
     public function store(Request $request)
     {

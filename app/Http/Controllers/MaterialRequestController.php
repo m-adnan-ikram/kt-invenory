@@ -15,7 +15,7 @@ class MaterialRequestController extends Controller
     // MaterialRequestController.php
     public function index()
 {
-    $mrs = MaterialRequest::with(['details.product', 'requestedByUser'])->get(); // eager load 'requestedByUser' relation
+    $mrs = MaterialRequest::with(['details.product', 'requestedByUser'])->latest()->get(); // eager load 'requestedByUser' relation
     $products = Product::get();
 
     return response()->json([

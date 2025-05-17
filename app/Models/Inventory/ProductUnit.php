@@ -10,6 +10,10 @@ class ProductUnit extends Model
     use HasFactory;
     protected $guarded = [];
     protected $fillable = ['name'];
-
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'unit_id');
+    }
+    
 
 }

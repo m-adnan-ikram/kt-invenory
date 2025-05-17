@@ -9,13 +9,20 @@ class SupplierController extends Controller
 {
     //
   // ✅ SupplierController@index
-        public function index()
-        { 
-            $suppliers = Supplier::get();
-            return response()->json([
-                'suppliers' => $suppliers
-            ]);
-        }
+    public function index()
+    {
+        $suppliers = Supplier::withCount('bidDetails')
+            ->get()
+            ->map(function ($supplier) {
+                $supplier->is_deletable = $supplier->bid_details_count == 0;
+                return $supplier;
+            });
+    
+        return response()->json([
+            'suppliers' => $suppliers
+        ]);
+    }
+    
 
     // ✅ Store a new supplier
     public function store(Request $request)

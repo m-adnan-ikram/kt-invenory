@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory\GoodReceiveNote;
 use App\Models\Inventory\GoodReceiveNoteDetail;
+use App\Models\Inventory\MaterialRequest;
+use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseOrder;
 use App\Models\Inventory\PurchaseOrderDetail;
 use Illuminate\Http\Request;
@@ -15,7 +17,7 @@ class StockInwardController extends Controller
     //
     public function index()
     {
-          $pos = PurchaseOrder::with(['supplier', 'mr.requestedByUser', 'prn'])
+        $pos = PurchaseOrder::with(['supplier', 'mr.requestedByUser', 'prn'])
             ->where('status', 1)
             ->latest()
             ->get();
@@ -38,7 +40,7 @@ class StockInwardController extends Controller
             'po_id'                   => 'required|exists:purchase_orders,id',
             'products'                => 'required|array|min:1',
             'products.*.product_id'   => 'required|exists:products,id',
-            'products.*.received_qty' => 'required|integer|min:1',
+            'products.*.received_qty' => 'required|integer|min:0',
         ]);
         DB::beginTransaction();
         try {
@@ -52,33 +54,49 @@ class StockInwardController extends Controller
             // Step 2: Iterate over products
             foreach ($request->products as $product) {
                 $productId   = $product['product_id'];
-                $receivedQty = $product['received_qty'];
-                // Find matching poDetail
-                $poDetail = $po->poDetails->where('product_id', $productId)->first();
-                if (!$poDetail) {
-                    continue; // Skip if product not found in PO
+                if($product['received_qty'] >0){
+                    $receivedQty = $product['received_qty'];
+                    // Find matching poDetail
+                    $poDetail = $po->poDetails->where('product_id', $productId)->first();
+                    if (!$poDetail) {
+                        continue; // Skip if product not found in PO
+                    }
+                    // Update PO Detail's store_received
+                    $poDetail->store_received += $receivedQty;
+                    $poDetail->save();
+                    $fullyReceived = $po->poDetails->every(function ($detail) {
+                        return $detail->qty <= $detail->store_received;
+                    });
+                    $po->status = $fullyReceived ? 2 : 1; // 3 = Fully Received, 2 = Partially Received
+                    $po->save();
+                    // Insert GRN Detail
+                    GoodReceiveNoteDetail::create([
+                        'good_receive_note_id' => $grn->id,
+                        'product_id'           => $productId,
+                        'qty'                  => $receivedQty,
+                        'rate'                 => $poDetail->rate,
+                        'total'                => $poDetail->rate * $receivedQty,
+                        'tax'                  => $poDetail->tax,
+                        'delivery_charges'     => $poDetail->delivery,
+                        'discount'             => $poDetail->discount,
+                        'net_amount'           => $poDetail->net_amount, // or calculate net_amount per unit if needed
+                    ]);
+                    // Weighted average rate calculation
+                    $product = Product::findOrFail($productId);
+                    $totalOldValue = $product->qty * $product->rate;
+                    $totalNewValue = $receivedQty * $poDetail->rate;
+                    $newQty        = $product->qty + $receivedQty;
+                    $newAvgRate = $newQty > 0 ? ($totalOldValue + $totalNewValue) / $newQty : $poDetail->rate;
+                    // Update product stock and rate
+                    $product->qty  = $newQty;
+                    $product->avg_price = $newAvgRate;
+                    $product->save();
                 }
-                // Update PO Detail's store_received
-                $poDetail->store_received += $receivedQty;
-                $poDetail->save();
-                $fullyReceived = $po->poDetails->every(function ($detail) {
-                    return $detail->qty <= $detail->store_received;
-                });
-                $po->status = $fullyReceived ? 2 : 1; // 3 = Fully Received, 2 = Partially Received
-                $po->save();
-                // Insert GRN Detail
-                GoodReceiveNoteDetail::create([
-                    'good_receive_note_id' => $grn->id,
-                    'product_id'           => $productId,
-                    'qty'                  => $receivedQty,
-                    'rate'                 => $poDetail->rate,
-                    'total'                => $poDetail->rate * $receivedQty,
-                    'tax'                  => $poDetail->tax,
-                    'delivery_charges'     => $poDetail->delivery,
-                    'discount'             => $poDetail->discount,
-                    'net_amount'           => $poDetail->net_amount, // or calculate net_amount per unit if needed
-                ]);
+                
             }
+            $mr = MaterialRequest::findOrFail($po->mr_id);
+                $mr->status = 6;
+                $mr->save();
             DB::commit();
             return response()->json([
                 'success' => true,
@@ -109,7 +127,5 @@ class StockInwardController extends Controller
     
         return response()->json($inward);
     }
-    
-
      
 }

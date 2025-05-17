@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory\BidDetail;
 use App\Models\Inventory\BidSummary;
+use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseOrder;
 use App\Models\Inventory\PurchaseOrderDetail;
@@ -86,10 +87,8 @@ class PurchaseOrderController extends Controller
                 if (!$bid || !$mr || !$prn) {
                     throw new \Exception("Missing bid, MR or PRN for supplier ID $supplierId");
                 }
-    
                 $total = 0;
                 $poDetails = [];
-    
                 foreach ($supplierDetails as $detail) {
                     $qty = floatval($detail->qty);
                     $rate = floatval($detail->rate);
@@ -129,9 +128,10 @@ class PurchaseOrderController extends Controller
                 foreach ($poDetails as &$detail) {
                     $detail['po_id'] = $po->id;
                 }
-    
                 PurchaseOrderDetail::insert($poDetails);
-    
+                $mr = MaterialRequest::findOrFail($mr->id);
+                $mr->status = 5;
+                $mr->save();
                 $bid->update(['status' => 2]);
                 $createdPOs[] = $po->id;
             }

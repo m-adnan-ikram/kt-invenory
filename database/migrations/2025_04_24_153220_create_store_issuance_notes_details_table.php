@@ -13,16 +13,21 @@ class CreateStoreIssuanceNotesDetailsTable extends Migration
      */
     public function up()
     {
-        Schema::create('store_issuance_notes_details', function (Blueprint $table) {
+        Schema::create('store_issuance_note_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('store_issuance_note_id')->constrained('store_issuance_notes');
-            $table->foreignId('product_id')->constrained('products');
+            $table->foreignId('store_issuance_note_id')
+                ->constrained('store_issuance_notes')
+                ->onDelete('cascade');
+            $table->foreignId('product_id')
+                ->constrained('products')
+                ->onDelete('cascade');
             $table->integer('qty');
             $table->decimal('rate', 10, 2); 
             $table->decimal('total', 10, 2);
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

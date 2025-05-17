@@ -8,9 +8,16 @@ use App\Http\Controllers\ProductUnitController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequisitionNoteController;
 use App\Http\Controllers\StockInwardController;
+use App\Http\Controllers\StockOutwardController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
+// Stock Inward
+Route::middleware(['auth:sanctum'])->prefix('web/v1/outward')->group(function () {
+    Route::post('/', [StockOutwardController::class, 'index']);     
+    Route::post('store', [StockOutwardController::class, 'store']);
+
+});
 // Stock Inward
 Route::middleware(['auth:sanctum'])->prefix('web/v1/inward')->group(function () {
     Route::post('/', [StockInwardController::class, 'index']);    

@@ -23,7 +23,15 @@ class Product extends Model
     {
         return $this->belongsTo(ProductCategory::class);
     }
-    
+    public function materialRequestDetails()
+    {
+        return $this->hasMany(MaterialRequestDetail::class);
+    }
+    public function prnDetails()
+    {
+        return $this->hasMany(PurchaseRequisitionNoteDetail::class);
+    }
+
 }
 
 

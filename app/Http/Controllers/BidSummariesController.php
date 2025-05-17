@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory\BidDetail;
 use App\Models\Inventory\BidSummary;
+use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseRequisitionNote;
 use App\Models\Inventory\Supplier;
@@ -109,6 +110,9 @@ class BidSummariesController extends Controller
                 }
             }
             if ($request->prn_id) {
+                $mr = MaterialRequest::findOrFail($request->mr_id);
+                $mr->status = 4;
+                $mr->save();
                 PurchaseRequisitionNote::find($request->prn_id)?->update(['status' => 2]);
             }
             DB::commit();

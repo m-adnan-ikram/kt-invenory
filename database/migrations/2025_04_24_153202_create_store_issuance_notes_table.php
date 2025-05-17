@@ -17,10 +17,13 @@ class CreateStoreIssuanceNotesTable extends Migration
             $table->id();
             $table->string('requested_by');
             $table->string('reason');
-            $table->foreignId('mr_id')->constrained('material_requests');
+            $table->foreignId('mr_id')
+                ->constrained('material_requests')
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }
+
 
     /**
      * Reverse the migrations.

@@ -9,5 +9,9 @@ class StoreIssuanceNoteDetail extends Model
 {
     use HasFactory;
     protected $fillable = ['store_issuance_note_id', 'product_id', 'qty', 'rate', 'total'];
-
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+    
 }

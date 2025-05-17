@@ -11,7 +11,13 @@ class ProductCategoryController extends Controller
     //
     public function index()
     {
-        $categories = ProductCategory::get();
+        $categories = ProductCategory::withCount('products')
+            ->get()
+            ->map(function ($category) {
+                $category->is_deletable = $category->products_count == 0;
+                return $category;
+            });
+    
         return response()->json([
             'success' => true,
             'message' => 'Categories fetched successfully.',
