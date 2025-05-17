@@ -53,7 +53,7 @@
                             <td>BID - {{ po.bid_id }}</td>
                             <td>{{ new Date(po.created_at).toLocaleString() }}</td>
                             <th>{{ po.total }} PKR</th>
-                            <td>{{ po.supplier.name }} PKR</td>
+                            <td>{{ po.supplier.name }}</td>
                             <td>
                               <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
                               <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
@@ -608,6 +608,7 @@
           if (response.status === 200 || response.status === 201) {
             this.success = 'Purchase Orders created successfully!';
             this.selectedDetails = [];
+            this.fetchBid_PO();
             this.$emit('close');
             $('#BidModal').modal('hide');
           } else {

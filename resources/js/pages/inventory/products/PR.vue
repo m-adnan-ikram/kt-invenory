@@ -92,7 +92,9 @@
                       <td>MR - {{ prn.mr_id }}</td>
                       <td>PRN - {{ prn.id }}</td>
                       <td>{{ new Date(prn.created_at).toLocaleString() }}</td>
+                      
                       <td>
+                        
                         <span
                           class="badge text-white"
                           :class="{
@@ -107,7 +109,7 @@
                               : prn.status == 1
                               ? 'Processing'
                               : prn.status == 2
-                              ? 'Issued'
+                              ? 'BID Generated'
                               : 'Unknown'
                           }}
                         </span>

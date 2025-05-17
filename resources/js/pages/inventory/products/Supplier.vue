@@ -56,9 +56,14 @@
                         <button v-else class="btn btn-primary btn-sm mx-1" @click="editSupplier(supplier)">
                           <i class="far fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" @click="confirmDelete(supplier.id)">
+                        <button 
+                          v-if="supplier.is_deletable && editId !== supplier.id" 
+                          class="btn btn-danger btn-sm" 
+                          @click="confirmDelete(supplier.id)"
+                        >
                           <i class="fas fa-trash"></i>
                         </button>
+
                       </td>
                     </tr>
                   </tbody>
@@ -136,9 +141,14 @@
                         <button v-else class="btn btn-primary btn-sm mx-1" @click="editSupplier(supplier)">
                           <i class="far fa-edit"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" @click="confirmDelete(supplier.id)">
+                        <button 
+                          v-if="supplier.is_deletable && editId !== supplier.id" 
+                          class="btn btn-danger btn-sm" 
+                          @click="confirmDelete(supplier.id)"
+                        >
                           <i class="fas fa-trash"></i>
                         </button>
+
                       </td>
                     </tr>
                   </tbody>

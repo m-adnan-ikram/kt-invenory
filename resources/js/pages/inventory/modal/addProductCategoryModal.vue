@@ -25,59 +25,63 @@
                     </div>
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead>
-          <h5 class="modal-title" id="">Product Categories</h5>
-          <tr>
-            <th>Sr No.</th>
-            <th>Category Name</th>
-            <th>Date</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(category, index) in categoryData" :key="category.id">
-          <td>{{ index + 1 }}</td>
-          <td>
-            <input v-if="editIndex === index" v-model="editCategory" class="form-control" />
-            <span v-else>{{ category.name }}</span>
-          </td>
-          <td>{{ formatDate(category.created_at) }}</td>
-          <td>
-            <button v-if="editIndex === index" class="btn btn-success" @click="submitCategoryEdit()">Save</button>
-            <button v-else class="btn btn-primary" @click="editCategoryRow(index, category)"><i class="far fa-edit"></i></button>
-            <button class="btn btn-danger ml-1" @click="confirmCategoryDelete(category.id, index)">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-      </table>
-    </div>
+                    <table class="table table-striped table-hover">
+                      <thead>
+                        <h5 class="modal-title" id="">Product Categories</h5>
+                        <tr>
+                          <th>Sr No.</th>
+                          <th>Category Name</th>
+                          <th>Date</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      <tr v-for="(category, index) in categoryData" :key="category.id">
+                        <td>{{ index + 1 }}</td>
+                        <td>
+                          <input v-if="editIndex === index" v-model="editCategory" class="form-control" />
+                          <span v-else>{{ category.name }}</span>
+                        </td>
+                        <td>{{ formatDate(category.created_at) }}</td>
+                        <td>
+                          <button v-if="editIndex === index" class="btn btn-success" @click="submitCategoryEdit()">Save</button>
+                          <button v-else class="btn btn-primary" @click="editCategoryRow(index, category)"><i class="far fa-edit"></i></button>
+                          <button 
+                            v-if="category.is_deletable && editIndex !== index" 
+                            class="btn btn-danger ml-1" 
+                            @click="confirmCategoryDelete(category.id, index)"
+                          >
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                    </table>
+                  </div>
 
-    <!-- Delete Modal -->
-    <div v-if="showDeleteModal">
-      <div class="modal-backdrop fade show"></div>
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Confirm Delete</h5> 
-              <button type="button" class="close" @click="showDeleteModal = false">
-                <span>&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              Are you sure you want to delete this expense?
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
-              <button class="btn btn-danger" @click="deleteCategoryRow">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                      <!-- Delete Modal -->
+                      <div v-if="showDeleteModal">
+                        <div class="modal-backdrop fade show"></div>
+                        <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Confirm Delete</h5> 
+                                <button type="button" class="close" @click="showDeleteModal = false">
+                                  <span>&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                Are you sure you want to delete this expense?
+                              </div>
+                              <div class="modal-footer">
+                                <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
+                                <button class="btn btn-danger" @click="deleteCategoryRow">Delete</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                     </div>
                 </div>

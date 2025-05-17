@@ -61,12 +61,12 @@
                             <router-link class="nav-link text-capitalize" :to="{ name: 'stockInward' }">
                                 <span><i class="fa fa-warehouse"></i>  Stock Inward</span>
                                 <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ posQty || 0 }}</span>
-
                             </router-link>
                         </li>
                         <li class="dropdown" v-if="checkForSubmenu('terminals')">
-                        <router-link class="nav-link text-capitalize" :to="{ name: 'stockOutward' }">
-                            <i class="fa fa-box-open"></i> Stock Outward
+                        <router-link class="nav-link text-capitalize" :to="{ name: 'stockOutward' }"> 
+                            <span><i class="fa fa-warehouse"></i>  Stock Outward</span>
+                            <span class="badge badge-secondary" style="width: 25px; padding: 6px;">{{ mrsQty || 0 }}</span>
                         </router-link>  
                         </li>
                         <!-- <li class="dropdown" v-if="checkForSubmenu('terminals')">

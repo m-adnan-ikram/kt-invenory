@@ -26,58 +26,63 @@
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
                           <table class="table table-striped table-hover">
-        <thead>
-          <h5 class="modal-title" id="">Product Units</h5>
-          <tr>
-            <th>Sr No.</th>
-            <th>Unit Name</th>
-            <th>Date</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(unit, index) in unitData" :key="unit.id">
-          <td>{{ index + 1 }}</td>
-          <td>
-            <input v-if="editIndex === index" v-model="editUnit" class="form-control" />
-            <span v-else>{{ unit.name }}</span>
-          </td>
-          <td>{{ formatDate(unit.created_at) }}</td>
-          <td>
-            <button v-if="editIndex === index" class="btn btn-success" @click="submitUnitEdit()">Save</button>
-            <button v-else class="btn btn-primary" @click="editUnitRow(index, unit)"><i class="far fa-edit"></i></button>
-            <button class="btn btn-danger ml-1" @click="confirmUnitDelete(unit.id, index)">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-      </table>
+                            <thead>
+                              <h5 class="modal-title" id="">Product Units</h5>
+                              <tr>
+                                <th>Sr No.</th>
+                                <th>Unit Name</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="(unit, index) in unitData" :key="unit.id">
+                              <td>{{ index + 1 }}</td>
+                              <td>
+                                <input v-if="editIndex === index" v-model="editUnit" class="form-control" />
+                                <span v-else>{{ unit.name }}</span>
+                              </td>
+                              <td>{{ formatDate(unit.created_at) }}</td>
+                              <td>
+                                <button v-if="editIndex === index" class="btn btn-success" @click="submitUnitEdit()">Save</button>
+                                <button v-else class="btn btn-primary" @click="editUnitRow(index, unit)"><i class="far fa-edit"></i></button>
+                                <button 
+                                  v-if="unit.is_deletable && editIndex !== index" 
+                                  class="btn btn-danger ml-1" 
+                                  @click="confirmUnitDelete(unit.id, index)"
+                                >
+                                  <i class="fas fa-trash"></i>
+                                </button>
+
+                              </td>
+                            </tr>
+                          </tbody>
+                          </table>
                   </div>
 
-    <!-- Delete Modal -->
-    <div v-if="showDeleteModal">
-      <div class="modal-backdrop fade show"></div>
-      <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Confirm Delete</h5>
-              <button type="button" class="close" @click="showDeleteModal = false">
-                <span>&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              Are you sure you want to delete this Product Unit?
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
-              <button class="btn btn-danger" @click="deleteUnitRow">Delete</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                    <!-- Delete Modal -->
+                      <div v-if="showDeleteModal">
+                        <div class="modal-backdrop fade show"></div>
+                        <div class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Confirm Delete</h5>
+                                <button type="button" class="close" @click="showDeleteModal = false">
+                                  <span>&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                Are you sure you want to delete this Product Unit?
+                              </div>
+                              <div class="modal-footer">
+                                <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
+                                <button class="btn btn-danger" @click="deleteUnitRow">Delete</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                     </div>
                 </div>

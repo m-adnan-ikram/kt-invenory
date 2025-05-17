@@ -31,6 +31,7 @@
                     <thead>
                       <tr>
                         <th>Sr No.</th>
+                        <th>GRN #</th>  
                         <th>PO #</th>  
                         <th>Date</th>
                         <th>Supplier</th> 
@@ -41,6 +42,7 @@
                     <tbody>
                         <tr v-for="(grn, index) in inwards" :key="grn.id">
                           <td>{{ index + 1 }}</td>
+                          <td>GRN - {{ grn.id }}</td> 
                           <td>PO - {{ grn.po_id }}</td> 
                           <td>{{ new Date(grn.created_at).toLocaleString() }}</td>
                           <td>{{ grn.supplier?.name || '-' }}</td>
@@ -103,9 +105,9 @@
                               <button class="btn btn-success btn-sm mr-1 px-2" @click="addInward(po)">
                                 <i class="fas fa-plus"></i>
                               </button>
-                              <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
+                              <!-- <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
                                 <i class="fas fa-eye"></i> View
-                              </button>
+                              </button> -->
                             </td>
                           </tr>
                         </template>
@@ -175,11 +177,11 @@
           </Add>
           <!-- POs Modal --> 
           <div class="modal fade" id="viewPOModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-xl" role="document" v-if="selectedPOs.length">
+            <div class="modal-dialog modal-xl modal-dialog-centered" role="document" v-if="selectedPOs.length">
               <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                   <h5 class="modal-title p-2">
-                    POs Details
+                   Purchase Order - POs Details
                   </h5>
                   <button type="button" class="close text-white" data-dismiss="modal" @click="selectedPOs = []">
                     <span>&times;</span>
@@ -256,11 +258,11 @@
           </div>
            <!-- Inward Modal --> 
           <div class="modal fade" id="inwardModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-xl" role="document" v-if="selectedGRN && selectedGRN.details?.length">
+            <div class="modal-dialog modal-xl modal-dialog-centered" role="document" v-if="selectedGRN && selectedGRN.details?.length">
               <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                   <h5 class="modal-title p-2">
-                    GRN Details
+                   Good Receive Note - GRNs Details
                   </h5>
                   <button type="button" class="close text-white" data-dismiss="modal">
                     <span>&times;</span>
@@ -307,7 +309,8 @@
   </template>
   
   <script>
-  import Add from '../../../components/Add.vue'; 
+  import Swal from 'sweetalert2';
+import Add from '../../../components/Add.vue'; 
   
   export default {
     name: "POManager",
@@ -433,15 +436,21 @@
                   product_name: p.product_name,
                   qty: p.qty,
                   already_received_qty: p.already_received_qty,
-                  received_qty: p.received_qty
+                  received_qty: p.received_qty ?? 0
                 }))
               };
               const response = await this.callApi('post', 'inward/store', payload);
-              if (response.data.success) {
-                this.success = response.data.message;
+              console.log(response.status);
+              
+              if (response.status == 200 || response.status == 201) {
+  
                 $('#addInwardModal').modal('hide');
-                this.fetchInwards(); // Refresh list
                 this.fetchPOAndInwards(); 
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Stock Inward Created',
+                  text: 'Stock Inward added successfully!',
+                });
               } else {
                 this.validationErrors = response.data.errors || {};
               }

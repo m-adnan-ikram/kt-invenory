@@ -36,21 +36,30 @@
                         <span
                           class="badge text-white"
                           :class="{
-                            'bg-danger': mr.status == 0,
-                            'bg-warning': mr.status == 1,
-                            'bg-success': mr.status == 2, 
-                            'bg-info': mr.status == 3, 
+                            'badge-danger': mr.status == 0,
+                            'badge-warning': mr.status == 1,
+                            'badge-success': mr.status == 2,
+                            'badge-primary': mr.status == 3, 
+                            'badge-secondary': mr.status == 4, 
+                            'badge-info': mr.status == 5, 
+                            'badge-dark': mr.status == 6, 
                           }"
                         >
                           {{
-                            mr.status == 0 ? 'Rejected' : mr.status == 1 ? 'Processing' : mr.status == 2
-                              ? 'Issued' : mr.status == 3 ? 'PRN Generated' : 'Unknown'
+                            mr.status == 0 ? 'Rejected' :
+                            mr.status == 1 ? 'Processing' :
+                            mr.status == 2 ? 'Store Issued' :
+                            mr.status == 3 ? 'PRN Generated' :
+                            mr.status == 4 ? 'BID Generated' :
+                            mr.status == 5 ? 'PO Generated' :
+                            mr.status == 6 ? 'InWard Generated' :
+                            'Unknown'
                           }}
                         </span>
                       </td>
                       <td>
                         <button
-                          v-if="mr.status != 3"
+                          v-if="mr.status == 1"
                           class="btn btn-danger btn-sm mx-1"
                           @click="confirmDelete(mr.id)"
                         >
@@ -84,7 +93,7 @@
                 <div class="form-group col-md-4">
                   <div class="d-flex justify-content-between">
                     <label>Select Product</label>
-                    <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button>
+                    <!-- <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button> -->
                   </div>
                   <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control select2">
                     <option value="">Select</option>
@@ -135,7 +144,7 @@
                         </button>
                       </td>
                     </tr>
-                    <tr class="text-center w-100">
+                    <tr class="text-center w-100" v-if="productsList.length == 0">
                       <p><i>No Product Added</i></p>
                     </tr>
                   </tbody>
