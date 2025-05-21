@@ -13,7 +13,7 @@
                         <div class="card-body">
                             <div class="form-group">
                                 <label for="name">Name <span class="text-danger ml-1">*</span></label>
-                                <input v-model="newCategory" type="text" class="form-control" placeholder="Enter Name">
+                                <input v-model="newCategory" type="text" required class="form-control" placeholder="Enter Name">
                             </div> 
                         </div>
                     </div>
@@ -25,7 +25,7 @@
                     </div>
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover dataTable">
                       <thead>
                         <h5 class="modal-title" id="">Product Categories</h5>
                         <tr>
@@ -39,7 +39,7 @@
                       <tr v-for="(category, index) in categoryData" :key="category.id">
                         <td>{{ index + 1 }}</td>
                         <td>
-                          <input v-if="editIndex === index" v-model="editCategory" class="form-control" />
+                          <input v-if="editIndex === index" required v-model="editCategory" class="form-control" />
                           <span v-else>{{ category.name }}</span>
                         </td>
                         <td>{{ formatDate(category.created_at) }}</td>
@@ -76,7 +76,7 @@
                               </div>
                               <div class="modal-footer">
                                 <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
-                                <button class="btn btn-danger" @click="deleteCategoryRow">Delete</button>
+                                <button class="btn btn-danger" @click="deleteCategory">Delete</button>
                               </div>
                             </div>
                           </div>
@@ -123,15 +123,31 @@ export default {
     async createCategory() {
     if (!this.newCategory) return;
     try {
-      const res = await this.callApi('post', 'inventory-product-category/store', {
+      const response = await this.callApi('post', 'inventory-product-category/store', {
         category: this.newCategory,
       });
 
-      const newCategory = res.data.data;
+      const newCategory = response.data.data;
       this.categoryData.unshift(newCategory);
 
       this.newCategory = '';
-      Swal.fire('Success', 'Category added successfully!', 'success');
+      this.fetchCategories();
+      if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: ' Category Created',
+              text: 'Category added successfully!',
+            });
+          } 
+          if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+          } 
     } catch (err) {
       console.error(err.response?.data || err);
       Swal.fire('Error', 'Could not add category.', 'error');
@@ -146,7 +162,7 @@ export default {
 
 async submitCategoryEdit() {
   try {
-    const res = await this.callApi("post", "inventory-product-category/update", {
+    const response = await this.callApi("post", "inventory-product-category/update", {
       id: this.editId,
       name: this.editCategory,
     });
@@ -159,46 +175,77 @@ async submitCategoryEdit() {
     this.editIndex = null;
     this.editCategory = '';
     this.editId = null;
+    this.fetchCategories();
+    console.log(response);
+    
+    if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: 'Product Category Updated',
+              text: 'Product Category Updated successfully!',
+            });
+          } 
+          if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+          }
+          } catch (err) {
+            console.error(err.response?.data || err);
+            Swal.fire('Error', 'Failed to update category.', 'error');
+          }
+        },
 
-    Swal.fire('Updated', 'Category updated successfully!', 'success');
-  } catch (err) {
-    console.error(err.response?.data || err);
-    Swal.fire('Error', 'Failed to update category.', 'error');
-  }
-},
+    async confirmCategoryDelete(id, index) {
+          const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Yes, delete it!',
+          });
 
-async confirmCategoryDelete(id, index) {
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: "You won't be able to revert this!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#aaa',
-    confirmButtonText: 'Yes, delete it!',
-  });
+          if (result.isConfirmed) {
+            this.deleteCategory (id, index);
+          }
+        },
 
-  if (result.isConfirmed) {
-    this.deleteCategoryRow(id, index);
-  }
-},
-
-async deleteCategoryRow(id, index) {
-  try {
-    await this.callApi("post", "inventory-product-category/delete", { id });
-
+async deleteCategory(id, index) {
+ 
+   const response = await this.callApi("post", "inventory-product-category/delete", { id });
     // Instantly remove from local array
     this.categoryData.splice(index, 1);
-
-    Swal.fire('Deleted!', 'Category has been deleted.', 'success');
-  } catch (err) {
-    console.error(err.response?.data || err);
-    Swal.fire('Error', 'Could not delete category.', 'error');
-  }
+    console.log(response);
+    
+    this.fetchCategories();
+    if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: 'Category Deleted',
+              text: 'Category deleted successfully!',
+            });
+          } 
+          if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+          }
+          else{
+               Swal.fire('Error', err.response?.data , 'error');
+          } 
 },
 
-
-  }
+  },
 };
 
 </script>

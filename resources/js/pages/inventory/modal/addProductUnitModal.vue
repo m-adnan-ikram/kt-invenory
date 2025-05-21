@@ -13,7 +13,7 @@
                         <div class="card-body">
                             <div class="form-group">
                                 <label for="name">Name <span class="text-danger ml-1">*</span></label>
-                                <input v-model="newUnit" type="text" class="form-control" placeholder="Enter Name">
+                                <input v-model="newUnit" type="text" required class="form-control" placeholder="Enter Name">
                             </div> 
                         </div>
                     </div>
@@ -25,7 +25,7 @@
                     </div>
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
-                          <table class="table table-striped table-hover">
+                          <table class="table table-striped table-hover dataTable">
                             <thead>
                               <h5 class="modal-title" id="">Product Units</h5>
                               <tr>
@@ -39,7 +39,7 @@
                             <tr v-for="(unit, index) in unitData" :key="unit.id">
                               <td>{{ index + 1 }}</td>
                               <td>
-                                <input v-if="editIndex === index" v-model="editUnit" class="form-control" />
+                                <input v-if="editIndex === index" v-model="editUnit" required class="form-control" />
                                 <span v-else>{{ unit.name }}</span>
                               </td>
                               <td>{{ formatDate(unit.created_at) }}</td>
@@ -123,20 +123,33 @@ export default {
 
     async createUnit() {
     if (!this.newUnit) return;
-    try {
-      const res = await this.callApi('post', 'inventory-product-unit/store', {
+      const response = await this.callApi('post', 'inventory-product-unit/store', {
         unit: this.newUnit,
       });
-
-      const newUnit = res.data.data;
+      const newUnit = response.data.data;
       this.unitData.unshift(newUnit);
-
       this.newUnit = '';
-      Swal.fire('Success', 'Unit added successfully!', 'success');
-    } catch (err) {
-      console.error(err.response?.data || err);
-      Swal.fire('Error', 'Could not add category.', 'error');
-    }
+      console.log(response);
+      
+      if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: 'Unit Added',
+              text: 'Unit Added successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        }  
   },
 
   editUnitRow(index, unit) {
@@ -147,7 +160,7 @@ export default {
 
 async submitUnitEdit() {
   try {
-    const res = await this.callApi("post", "inventory-product-unit/update", {
+    const response = await this.callApi("post", "inventory-product-unit/update", {
       id: this.editId,
       name: this.editUnit,
     });
@@ -161,7 +174,25 @@ async submitUnitEdit() {
     this.editUnit = '';
     this.editId = null;
 
-    Swal.fire('Updated', 'Unit updated successfully!', 'success');
+    if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: 'Unit Updated',
+              text: 'Unit Updated successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+               Swal.fire('Error', err.response?.data , 'error');
+        } 
   } catch (err) {
     console.error(err.response?.data || err);
     Swal.fire('Error', 'Failed to update unit.', 'error');
@@ -185,17 +216,30 @@ async confirmUnitDelete(id, index) {
 },
 
 async deleteUnitRow(id, index) {
-  try {
-    await this.callApi("post", "inventory-product-unit/delete", { id });
+ 
+   const response = await this.callApi("post", "inventory-product-unit/delete", { id });
 
     // Instantly remove from local array
     this.unitData.splice(index, 1);
-
-    Swal.fire('Deleted!', 'Unit has been deleted.', 'success');
-  } catch (err) {
-    console.error(err.response?.data || err);
-    Swal.fire('Error', 'Could not delete unit.', 'error');
-  }
+    if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            return Swal.fire({
+              icon: 'success',
+              title: 'Unit Deleted',
+              text: 'Unit deleted successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+               Swal.fire('Error', err.response?.data , 'error');
+        } 
 },
   }
 };

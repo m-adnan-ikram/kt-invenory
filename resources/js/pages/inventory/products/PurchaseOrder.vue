@@ -37,8 +37,7 @@
                           <th>BID #</th>
                           <th>Date</th>
                           <th>Grand Total</th>
-                          <th>Supplier Name</th>
-                          <th>Status</th>
+                          <th>Supplier Name</th> 
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -54,11 +53,6 @@
                             <td>{{ new Date(po.created_at).toLocaleString() }}</td>
                             <th>{{ po.total }} PKR</th>
                             <td>{{ po.supplier.name }}</td>
-                            <td>
-                              <span v-if="po.status == '2'" class="badge badge-success">Approved</span>
-                              <span v-else-if="po.status == '1'" class="badge badge-warning">Processing</span>
-                              <span v-else class="badge badge-danger">Rejected</span>
-                            </td>
                             <td>
                               <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
                                 <i class="fas fa-eye"></i> View
@@ -101,11 +95,7 @@
                         <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
                         <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
                         <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
-                        <td>
-                          <span v-if="bid.status == '2'" class="badge badge-success">Approved</span>
-                          <span v-else-if="bid.status == '1'" class="badge badge-warning">Processing</span>
-                          <span v-else class="badge badge-danger">Rejected</span>
-                        </td>
+                       
                         <td>
                         <button class="btn btn-success btn-sm" @click="openAddPOModal(bid.prn_id)">
                           <i class="fas fa-check"></i>
@@ -259,7 +249,6 @@
                       </tbody>
                     </table>
 
-                    <div class="col-md-3"><strong>Subtotal:</strong> {{ getSubtotal(bid.details).toFixed(2) }}</div>
                     <div class="col-md-3"><strong>Advance %:</strong> {{ bid.advance }}%</div>
                     <div class="col-md-3"><strong>After Delivery %:</strong> {{ bid.after_delivery }}%</div>
                     <div class="col-md-3"><strong>Credit Days:</strong> {{ bid.credit_days }}</div>
@@ -267,7 +256,16 @@
                     <div class="col-md-3"><strong>Delivery Charges:</strong> {{ bid.delivery_charges }}</div>
                     <div class="col-md-12"><strong>Contact Person:</strong> {{ bid.contact_person }}</div>
                     <div class="col-md-12"><strong>Terms & Conditions:</strong><br>{{ bid.terms_condition }}</div>
-                    <div class="col-md-3 ml-auto mt-2"><h6><strong>Grand Total:</strong> {{ calculateGrandTotal(bid) }}</h6></div>
+                    <div class="col-md-5 ml-auto">
+                      <div class="col-md-12"><h5 class="">Summary</h5></div>
+                      <hr>
+                      <div class="col-md-12"><h5 class="d-flex justify-content-between"><strong>Subtotal:</strong> <span>{{ getSubtotal(bid.details).toFixed(2) }}</span></h5></div>
+                      <div class="col-md-12"><h6 class="d-flex justify-content-between"><strong>Delivery Charges:</strong> <span>{{ bid.delivery_charges ?? 0 }}</span></h6></div>
+                      <div class="col-md-12"><h6 class="d-flex justify-content-between"><strong>Tax%:</strong> <span>{{ bid.tax ?? 0 }}%</span></h6></div>
+                      <div class="col-md-12"><small><h6 class="d-flex justify-content-between"><strong>Tax Amount:</strong> <span>{{ bid.tax_amount ?? 0 }}</span></h6></small></div>
+                      <div class="col-md-12"><h6 class="d-flex justify-content-between"><strong>Discount:</strong> <span>{{ bid.discount ?? 0 }}</span></h6></div>
+                      <div class="col-md-12"><h5 class="d-flex justify-content-between"><strong>Grand Total:</strong> <span>{{ calculateGrandTotal(bid) }}</span></h5></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -277,87 +275,110 @@
             </div>
           </div>
         </div>
-        <!-- POs Modal --> 
+        <!-- POs Modal -->  
         <div class="modal fade" id="viewPOModal" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-xl" role="document" v-if="selectedPOs.length">
             <div class="modal-content">
               <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title p-2">
-                  POs Details
-                </h5>
+                <h5 class="modal-title p-2">POs Details</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" @click="selectedPOs = []">
                   <span>&times;</span>
                 </button>
               </div>
-              <div class="modal-body bg-light">
-                <div
-                  v-for="(po, idx) in selectedPOs"
-                  :key="po.id"
-                  class="mb-3 p-4 border rounded shadow-sm"
-                >
-                <h6 class="mb-3 font-weight-bold border-bottom pb-2 d-flex justify-content-between align-items-center">
-                  <span>
-                      PO #{{ po.id }} &nbsp;&nbsp; | &nbsp;&nbsp;
-                      BID #: <span class="text-dark">{{ po.bid_id }}</span> &nbsp;&nbsp; | &nbsp;&nbsp;
-                      PRN #: <span class="text-dark">{{ po.prn_id }}</span> &nbsp;&nbsp; | &nbsp;&nbsp;
-                      MR #: <span class="text-dark">{{ po.mr_id }}</span>
+              <div class="modal-body bg-light text-dark ">
+                <div v-for="(po, idx) in selectedPOs" :key="po.id" class="mb-4 p-4 border rounded shadow-sm bg-white">
+                  <h6 class="text-dark mb-3 font-weight-bold border-bottom pb-2 d-flex justify-content-between align-items-center">
+                    <span>
+                      PO #: {{ po.id }} &nbsp;&nbsp; | &nbsp;&nbsp;
+                      BID #: {{ po.bid_id }} &nbsp;&nbsp; | &nbsp;&nbsp;
+                      PRN #: {{ po.prn_id }} &nbsp;&nbsp; | &nbsp;&nbsp;
+                      MR #: {{ po.mr_id }}
                     </span>
-                    <h6 class="text-dark">
-                      Date :
-                      {{ new Date(po.created_at).toLocaleString() }}
-                    </h6>
-                </h6>
-                <div class="mb-2">
-                    <h6 class="font-weight-bold border-bottom pb-1 mb-2">Supplier Information</h6>
+                    <span class="text-dark">Date: {{ po.created_at ? new Date(po.created_at).toLocaleString() : 'N/A' }}</span>
+                  </h6>
+
+                  <!-- Supplier Info -->
+                  <div class="mb-3 text-dark ">
+                    <h6 class="font-weight-bold border-bottom pb-1 ">Supplier Information</h6>
                     <div class="row">
-                      <div class="col-md-4 mb-1"><strong>Name:</strong> {{ po.supplier?.name }}</div>
-                      <div class="col-md-4 mb-1"><strong>Contact:</strong> {{ po.supplier?.contact }}</div>
-                      <div class="col-md-4 mb-1"><strong>CNIC:</strong> {{ po.supplier?.cnic }}</div>
-                      <div class="col-md-12 mb-1"><strong>Address:</strong> {{ po.supplier?.address }}</div>
+                      <div class="col-md-4 mb-1"><strong>Name:</strong> {{ po.supplier?.name || 'N/A' }}</div>
+                      <div class="col-md-4 mb-1"><strong>Contact:</strong> {{ po.supplier?.contact || 'N/A' }}</div>
+                      <div class="col-md-4 mb-1"><strong>CNIC:</strong> {{ po.supplier?.cnic || 'N/A' }}</div>
+                      <div class="col-md-12 mb-1"><strong>Address:</strong> {{ po.supplier?.address || 'N/A' }}</div>
                     </div>
                   </div>
-                  <table class="table table-bordered table-striped table-sm shadow-sm">
-                  <thead class="thead text-center">
-                    <tr>
-                      <th class="py-2 px-3">#</th>
-                      <th class="py-2 px-3">Product</th>
-                      <th class="py-2 px-3">Qty</th>
-                      <th class="py-2 px-3">Rate</th>
-                      <th class="py-2 px-3">Subtotal</th>
-                      <th class="py-2 px-3">Tax</th>
-                      <th class="py-2 px-3">Delivery</th>
-                      <th class="py-2 px-3">Discount</th>
-                      <th class="py-2 px-3">Grand Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr 
-                      v-for="(item, i) in po.po_details" 
-                      :key="item.id" 
-                      class="text-center align-middle"
-                    >
-                      <td class="py-2 px-3">{{ i + 1 }}</td>
-                      <td class="py-2 px-3">{{ item.product?.name || 'N/A' }}</td>
-                      <td class="py-2 px-3">{{ item.qty }}</td>
-                      <td class="py-2 px-3">{{ parseFloat(item.rate).toFixed(2) }}</td>
-                      <td class="py-2 px-3">{{ parseFloat(item.sub_total).toFixed(2) }}</td>
-                      <td class="py-2 px-3">{{ parseFloat(item.tax).toFixed(2) }}</td>
-                      <td class="py-2 px-3">{{ parseFloat(item.delivery).toFixed(2) }}</td>
-                      <td class="py-2 px-3">{{ parseFloat(item.discount).toFixed(2) }}</td>
-                      <td class="py-2 px-3 font-weight-bold text-success">{{ parseFloat(item.net_amount).toFixed(2) }}</td>
-                    </tr>
-                    <tr class="table-info font-weight-bold">
-                      <td colspan="8" class="text-right py-2 px-3">PO Grand Total</td>
-                      <td class="text-success py-2 px-3"><h6>{{ parseFloat(po.total).toFixed(2) }}</h6></td>
-                    </tr>
-                  </tbody>
-                </table>
 
+                  <!-- PO Details Table -->
+                  <table class="table table-bordered table-striped table-sm shadow-sm">
+                    <thead class="thead-dark text-center">
+                      <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Subtotal</th>
+                        <th>Tax</th>
+                        <th>Delivery</th>
+                        <th>Discount</th>
+                        <th>Grand Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, i) in po.po_details || []" :key="item.id || i" class="text-center align-middle">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.product?.name || 'N/A' }}</td>
+                        <td>{{ item.qty ?? 0 }}</td>
+                        <td>{{ parseFloat(item.rate ?? 0).toFixed(2) }}</td>
+                        <td>{{ parseFloat(item.sub_total ?? 0).toFixed(2) }}</td>
+                        <td>{{ parseFloat(item.tax ?? 0).toFixed(2) }}</td>
+                        <td>{{ parseFloat(item.delivery ?? 0).toFixed(2) }}</td>
+                        <td>{{ parseFloat(item.discount ?? 0).toFixed(2) }}</td>
+                        <td class="font-weight-bold text-success">{{ parseFloat(item.net_amount ?? 0).toFixed(2) }}</td>
+                      </tr>
+                      <tr class="table-info font-weight-bold">
+                        <td colspan="8" class="text-right">PO Grand Total</td>
+                        <td class="text-success"><h6>{{ parseFloat(po.total ?? 0).toFixed(2) }}</h6></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <!-- GRNs Section -->
+                  <div v-if="po.good_receive_notes?.length">
+                    <h5 class="text-dark font-weight-bold mt-4 mb-2 border-bottom pb-1">Goods Received Notes</h5>
+                    <div v-for="(grn, gidx) in po.good_receive_notes" :key="grn.id" class="mb-3">
+                      <div class="mb-2 text-muted">
+                        GRN #: {{ grn.id }} |
+                      </div>
+                      <table class="table table-bordered table-sm table-striped">
+                        <thead class="bg-secondary text-white text-center">
+                          <tr>
+                            <th>#</th>
+                            <th>Product</th>
+                            <th>Received Qty</th> 
+                            <th>Date</th> 
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(detail, didx) in grn.details || []"
+                            :key="detail.id || `${gidx}-${didx}`"
+                            class="text-center"
+                          >
+                            <td>{{ didx + 1 }}</td>
+                            <td>{{ detail.product?.name || 'N/A' }}</td>
+                            <td>{{ detail.qty ?? 0 }}</td> 
+                            <td>{{ detail.created_at ? new Date(detail.created_at).toLocaleString() : 'N/A' }}</td> 
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            </div>
+          </div>
         </div>
+
       </div>
     </section>
   </template>
@@ -602,24 +623,30 @@
         this.loading = true;
         const payload = {
           bid_detail_ids: this.selectedDetails
-        }; 
-        try {
+        };  
           const response = await this.callApi('post', 'pos/store', payload);
           if (response.status === 200 || response.status === 201) {
-            this.success = 'Purchase Orders created successfully!';
-            this.selectedDetails = [];
+            this.loading = false;
             this.fetchBid_PO();
             this.$emit('close');
-            $('#BidModal').modal('hide');
-          } else {
-            this.$emit('error', response.data.message || 'Something went wrong');
-          }
-        } catch (err) {
-          console.error(err);
-          this.$emit('error', 'Failed to create Purchase Orders');
-        } finally {
-          this.loading = false;
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Created',
+              text: 'Purchase Orders created successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
         }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        } 
       },
       async viewPODetail(po_id) {
         try {

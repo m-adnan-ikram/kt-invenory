@@ -92,25 +92,28 @@
                       <td>MR - {{ prn.mr_id }}</td>
                       <td>PRN - {{ prn.id }}</td>
                       <td>{{ new Date(prn.created_at).toLocaleString() }}</td>
-                      
                       <td>
-                        
                         <span
                           class="badge text-white"
                           :class="{
-                            'bg-danger':  prn.status == 0,
-                            'bg-warning': prn.status == 1,
-                            'bg-success': prn.status == 2
+                            'badge-danger': prn.mr.status == 0,
+                            'badge-warning': prn.mr.status == 1,
+                            'badge-success': prn.mr.status == 2 || prn.mr.status == 7,
+                            'badge-warning': prn.mr.status == 3, 
+                            'badge-secondary': prn.mr.status == 4, 
+                            'badge-info': prn.mr.status == 5, 
+                            'badge-dark': prn.mr.status == 6, 
                           }"
                         >
                           {{
-                            prn.status == 0
-                              ? 'Rejected'
-                              : prn.status == 1
-                              ? 'Processing'
-                              : prn.status == 2
-                              ? 'BID Generated'
-                              : 'Unknown'
+                            prn.mr.status == 0 ? 'Rejected' : 
+                            prn.mr.status == 2 ? 'Store Issued' :
+                            prn.mr.status == 3 ? 'Processing' :
+                            prn.mr.status == 4 ? 'BID Generated' :
+                            prn.mr.status == 5 ? 'PO Generated' :
+                            prn.mr.status == 6 ? 'InWard Generated' :
+                            prn.mr.status  == 7 ? 'Partial Store Issued' :
+                            'Unknown'
                           }}
                         </span>
                       </td>
@@ -308,7 +311,7 @@ export default {
   $('#prnModal').modal('show');
      },
     async submitInlinePRN() {
-      try {
+     
         const prnItems = this.selectedMR.details
           .filter(item => item.prnQty && item.prnQty > 0)
           .map(item => ({
@@ -328,17 +331,35 @@ export default {
 
         const response = await this.callApi('post', 'prn/store', payload);
 
-        if (response.data.success) {
+        if (response.status === 200 || response.status === 201) {
           Swal.fire('Success', response.data.message || 'PRN created successfully!', 'success');
           $('#viewMRModal').modal('hide');
           this.fetchMR_PRN();  // Refresh data
         } else {
           Swal.fire('Error', response.data.message || 'Something went wrong!', 'error');
         }
-      } catch (error) {
-        console.error("PRN Submit Error:", error);
-        Swal.fire('Error', error.response?.data?.message || 'Error while submitting PRN.', 'error');
-      }
+
+        if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchMR_PRN();  // Refresh data
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Created',
+              text: 'PRN created successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        } 
      },
   },
 };

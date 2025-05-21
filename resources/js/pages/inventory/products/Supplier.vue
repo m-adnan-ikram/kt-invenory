@@ -15,7 +15,7 @@
 
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -94,13 +94,18 @@
             <label>Address <span class="text-danger">*</span></label>
             <input type="text" class="form-control" placeholder="Enter Address" v-model="data.address" />
           </div>
+          <div class="col-md-12 text-right">
+            <button type="button" class="btn btn-primary px-3" :disabled="loading" @click="addSupplier">
+              {{ loading ? 'Loading...' : 'Add' }}
+            </button> 
+          </div>
         </div>
-
+       
 
         <div class="card-body">
               <div class="table-responsive">
                 <h4>Suppliers</h4>
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -155,14 +160,6 @@
                 </table>
               </div>
             </div>
-
-        <template v-slot:button>
-          <button type="button" class="btn btn-primary" :disabled="loading" @click="addSupplier">
-            {{ loading ? 'Loading...' : 'Add' }}
-          </button>
-        </template>
-
-
       </Add>
 
       <!-- Delete Confirm Modal -->
@@ -219,16 +216,25 @@ export default {
     this.fetchSuppliers();
   },
   methods: {
+    initializeDataTables() {
+    this.$nextTick(() => {
+      $('.dataTable').each(function () {
+        if (!$.fn.DataTable.isDataTable(this)) {
+          $(this).DataTable();
+        }
+      });
+    });
+  },
     clearForm() {
       this.data = { name: '', contact: '', cnic: '', address: '' };
       this.validationErrors = [];
       this.success = '';
     },
-
     async fetchSuppliers() {
   try {
     const response = await this.callApi('post', 'supplier');
     this.suppliers = response.data.suppliers; // ✅ Correct field
+    this.initializeDataTables()
   } catch (error) {
     console.error(error);
   }

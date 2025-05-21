@@ -74,11 +74,11 @@ import StockInward from "./pages/inventory/products/StockInward.vue";
 import StockOutward from "./pages/inventory/products/StockOutward.vue";
 import Suppliers from "./pages/inventory/products/Supplier.vue";
 import GPO from "./pages/inventory/products/Gpo.vue";
-import PO from "./pages/inventory/products/PO.vue";
-import MR from "./pages/inventory/products/MR.vue";
+import PO from "./pages/inventory/products/PurchaseOrder.vue";
+import MR from "./pages/inventory/products/MaterialRequest.vue";
 import Reports from "./pages/inventory/products/reports.vue";
 import BidSummary from "./pages/inventory/products/BidSummary.vue";
-import PR from "./pages/inventory/products/PR.vue";
+import PR from "./pages/inventory/products/PurchaseRequisitionNote.vue";
  
 const url = '/kt-dev/'
 // const url = '/'

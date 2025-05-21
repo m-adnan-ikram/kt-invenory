@@ -38,11 +38,11 @@
                           :class="{
                             'badge-danger': mr.status == 0,
                             'badge-warning': mr.status == 1,
-                            'badge-success': mr.status == 2,
-                            'badge-primary': mr.status == 3, 
-                            'badge-secondary': mr.status == 4, 
-                            'badge-info': mr.status == 5, 
-                            'badge-dark': mr.status == 6, 
+                            'badge-success': mr.status == 2 || mr.status == 7, // shared badge color
+                            'badge-primary': mr.status == 3,
+                            'badge-secondary': mr.status == 4,
+                            'badge-info': mr.status == 5,
+                            'badge-dark': mr.status == 6,
                           }"
                         >
                           {{
@@ -52,10 +52,12 @@
                             mr.status == 3 ? 'PRN Generated' :
                             mr.status == 4 ? 'BID Generated' :
                             mr.status == 5 ? 'PO Generated' :
-                            mr.status == 6 ? 'InWard Generated' :
+                            mr.status == 6 ? 'Inward Generated' :
+                            mr.status == 7 ? 'Store Partial Issued' :
                             'Unknown'
                           }}
                         </span>
+
                       </td>
                       <td>
                         <button
@@ -180,6 +182,7 @@
                       <th class="text-center">#</th>
                       <th>Product Name</th>
                       <th>Qty</th>
+                      <th>Store Issued Qty</th>
                       <th>Reason</th>
                       <th>Actions</th>
                     </tr>
@@ -201,7 +204,7 @@
                       <td v-else>
                         {{ detail.qty }}
                       </td>
-
+                      <td> {{ detail.store_issued_qty ?? 0 }}</td> 
                       <td v-if="editingIndex === index">
                         <input type="text" v-model="editDetailData.reason" class="form-control form-control-sm" />
                       </td>
@@ -289,7 +292,7 @@ import AddProductModal from '../modal/addProductsModal.vue';
       } catch (error) {
         console.error(error);
       }
-    },
+    }, 
     getProductName(id) {
       const product = this.products.find(p => p.id == id);
       return product ? product.name : 'Unknown';
@@ -309,16 +312,32 @@ import AddProductModal from '../modal/addProductsModal.vue';
       if (this.productsList.length === 0) {
         Swal.fire('Error', 'Add products before submitting.', 'error');
         return;
-      }
-      try {
+      } 
         const payload = { details: this.productsList };
-        await this.callApi('post', 'mr/store', payload);
-        Swal.fire('Success', 'MR submitted successfully!', 'success');
+        const response = await this.callApi('post', 'mr/store', payload);
         this.fetchMRs();
         this.clearForm();
-      } catch (error) {
-        Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
-      }
+        if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchMRs();
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Created',
+              text: 'MR Created successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        } 
     },
     clearForm() {
       this.productsList = [];
@@ -333,13 +352,13 @@ import AddProductModal from '../modal/addProductsModal.vue';
       this.editingIndex = index;
       this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
       this.editDetailData.product_id = detail.product.id; // Ensure product_id is set
-      },
+     },
     cancelEdit() {
         this.editingIndex = null;
         this.editDetailData = {};
-      },
+     },
     async saveDetail(index) {
-        try {
+        
           if (!this.editDetailData || !this.editDetailData.id) {
             throw new Error('No detail selected for update.');
           }
@@ -348,22 +367,28 @@ import AddProductModal from '../modal/addProductsModal.vue';
             qty: this.editDetailData.qty,
             reason: this.editDetailData.reason,
           };
-
           const response = await this.callApi('post', 'mr/detail-update', payload);
-
-          if (response.data && response.data.success) {
-            // Update locally (correct way in Vue 3)
-            this.selectedMR.details[index] = { ...this.editDetailData };
-
-            this.cancelEdit();
-
-            Swal.fire('Success', 'MR Updated successfully!', 'success');
-          } else {
-            Swal.fire('Error', error.response?.data?.message || 'Failed to update Material Request Detail!', 'error');
-          }
-        } catch (error) {
-          Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
+          if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchMRs();
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Updated',
+              text: 'MR Updated successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
         }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        } 
      },
     async deleteDetail(id, index) {
       try {
@@ -390,9 +415,9 @@ import AddProductModal from '../modal/addProductsModal.vue';
       } catch (error) { 
         Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
       }
-    },
+     },
     async confirmDelete(id) {
-      try {
+    
         const confirm = await Swal.fire({
           title: 'Delete Material Request',
           text: 'Are you sure you want to permanently delete this Material Request?',
@@ -413,28 +438,36 @@ import AddProductModal from '../modal/addProductsModal.vue';
         if (confirm.isConfirmed) {
           // User clicked "Yes, delete it!"
           const response = await this.callApi('post', 'mr/mr-delete', { id });
-
-          if (response && response.data && response.data.success) {
-            Swal.fire('Success', 'Deleted successfully!', 'success');
-
-            // Reload the list or remove the item locally
-            this.fetchMRs(); // or whatever you use to refresh
-          } else {
-            Swal.fire('Error', error.response?.data?.message || 'Something went wrong!', 'error');
-          }
+          if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchMRs();
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Deleted',
+              text: 'Bid Summary Deleted successfully!',
+            });
         } 
-        // else: User clicked "Cancel" => Do nothing
-      } catch (error) {
-        console.error('Delete MR error:', error);
-        Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
-      }
-    },
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        } 
+        } 
+      
+     },
     beforeUnmount() {
       const modalEl = document.getElementById('viewMRModal');
       if (modalEl) {
         modalEl.removeEventListener('hidden.bs.modal', this.cancelEdit);
       }
-    },
+     },
 
   }
 }

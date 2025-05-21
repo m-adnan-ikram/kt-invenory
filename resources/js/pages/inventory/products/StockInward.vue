@@ -79,8 +79,7 @@
                           <th>BID #</th>
                           <th>Date</th>
                           <th>Grand Total</th>
-                          <th>Supplier Name</th>
-                          <th>Status</th>
+                          <th>Supplier Name</th> 
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -96,11 +95,6 @@
                             <td>{{ new Date(po.created_at).toLocaleString() }}</td>
                             <td>{{ po.total }} PKR</td>
                             <td>{{ po.supplier?.name || '-' }}</td>
-                            <td>
-                              <span v-if="po.status == 2" class="badge badge-success">Approved</span>
-                              <span v-else-if="po.status == 1" class="badge badge-warning">Processing</span>
-                              <span v-else class="badge badge-danger">Rejected</span>
-                            </td>
                             <td>
                               <button class="btn btn-success btn-sm mr-1 px-2" @click="addInward(po)">
                                 <i class="fas fa-plus"></i>
@@ -428,7 +422,6 @@ import Add from '../../../components/Add.vue';
             return product.qty - (product.already_received_qty || 0);
          },
         async submitInward() {
-            try {
               const payload = {
                 po_id: this.selectedPO.id,
                 products: this.selectedPO.products.map(p => ({
@@ -441,22 +434,27 @@ import Add from '../../../components/Add.vue';
               };
               const response = await this.callApi('post', 'inward/store', payload);
               console.log(response.status);
-              
-              if (response.status == 200 || response.status == 201) {
-  
-                $('#addInwardModal').modal('hide');
-                this.fetchPOAndInwards(); 
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Stock Inward Created',
-                  text: 'Stock Inward added successfully!',
-                });
-              } else {
-                this.validationErrors = response.data.errors || {};
-              }
-            } catch (error) {
-              console.error('Error submitting inward:', error);
-            }
+                 if (response.status === 200 || response.status === 201) {
+                    this.loading = false;
+                    this.fetchPOAndInwards();
+                    this.clearForm();
+                    return Swal.fire({
+                      icon: 'success',
+                      title: 'Created',
+                      text: 'Stock Inward added successfully!',
+                    });
+                } 
+                if(response.status == 422){ 
+                    this.loading = false;
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Validation Error',
+                      text: 'Please fill all field',
+                    });
+                }
+                else{
+                    Swal.fire('Error', err.response?.data , 'error');
+                } 
          }, 
          async viewInward(grn) {
           try {

@@ -36,7 +36,6 @@
                       <th>PRN #</th>
                       <th>Date</th>
                       <th>Request By</th>
-                      <th>Status</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -47,11 +46,7 @@
                     <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
                     <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
                     <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
-                    <td>
-                      <span v-if="bid.status == '2'" class="badge badge-success">Approved</span>
-                      <span v-else-if="bid.status == '1'" class="badge badge-warning">Processing</span>
-                      <span v-else class="badge badge-danger">Rejected</span>
-                    </td>
+                     
                     <td>
                       <button class="btn btn-info btn-sm" @click="viewBidsByPRN(bid.prn?.id)">
                         <i class="fas fa-eye"></i>
@@ -82,8 +77,7 @@
                       <th>MR #</th>
                       <th>PRN #</th>
                       <th>Date</th>
-                      <th>Request By</th>
-                      <th>Status</th>
+                      <th>Request By</th> 
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -94,9 +88,7 @@
                       <td>PRN - {{ prn.id || 'N/A' }}</td>
                       <td>{{ new Date(prn.created_at).toLocaleString() }}</td>
                       <td>{{ prn.mr?.requested_by_user?.name || 'N/A' }}</td>
-                      <td>
-                        <span v-if="prn.status == '1'" class="badge badge-warning">Processing</span>
-                      </td>
+                     
                       <td>
                         <button 
                             class="btn btn-success btn-sm mx-1" 
@@ -263,16 +255,30 @@
             </div>
             <div class="form-group col-md-12 d-flex p-0 m-0">
               <label class="w-25">Delivery Charges</label>
-              <input type="text" class="form-control w-75" v-model="item.delivery_charges" @input="calculateGrandTotal(item)">
+              <input type="text" class="form-control w-75" placeholder="Enter Delivery Charges" v-model="item.delivery_charges" @input="calculateGrandTotal(item)">
             </div>
             <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
-              <label class="w-25">Tax</label>
-              <input type="text" class="form-control w-75" v-model="item.tax" @input="calculateGrandTotal(item)">
+              <label class="w-25">Tax %</label>
+              <div class="input-group w-75">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Enter Percentage of Tax" 
+                  v-model="item.tax" 
+                  @input="calculateGrandTotal(item)"
+                >
+                <div class="input-group-append">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+             </div>
+            <div class="form-group col-md-12 p-0 m-0 text-right">
+              <div><small>Tax Amount:<strong class="tax-amount"> {{ item.tax_amount ?? 0 }}</strong></small></div>
             </div>
             
             <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
               <label class="w-25">Discount (Amount)</label>
-              <input type="text" class="form-control w-75" v-model="item.discount" @input="calculateGrandTotal(item)">
+              <input type="text" class="form-control w-75" v-model="item.discount" placeholder="Enter Discount Amount" @input="calculateGrandTotal(item)">
             </div>
             <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
               <label class="w-50"><h6>Grand Total</h6></label>
@@ -313,8 +319,6 @@
               </button> 
             </div>
             <div class="modal-body">
-              
- 
               <div  id="addNewBidForm">
                 <div v-for="(item, index) in newBidFormRows" :key="index" class="row border-top pt-3 mt-4" id="addNewBidForm">
                <div class="col-md-12">
@@ -397,11 +401,25 @@
                     <div class="form-group col-md-12 d-flex p-0 m-0">
                       <label class="w-25">Delivery Charges</label>
                       <input type="text" class="form-control w-75" v-model="item.delivery_charges" @input="calculateGrandTotal(item)">
-                    </div>
-                    <div class="form-group col-md-12 d-flex p-0 m-0">
-                      <label class="w-25">Tax</label>
-                      <input type="text" class="form-control w-75" v-model="item.tax" @input="calculateGrandTotal(item)">
-                    </div>
+                    </div> 
+                    <div class="form-group col-md-12 d-flex p-0 m-0 mt-1">
+                        <label class="w-25">Tax %</label>
+                        <div class="input-group w-75">
+                          <input 
+                            type="text" 
+                            class="form-control" 
+                            placeholder="Enter Percentage of Tax" 
+                            v-model="item.tax" 
+                            @input="calculateGrandTotal(item)"
+                          >
+                          <div class="input-group-append">
+                            <span class="input-group-text">%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="form-group col-md-12 p-0 m-0 text-right">
+                        <div><small>Tax Amount:<strong class="tax-amount"> {{ item.tax_amount ?? 0 }}</strong></small></div>
+                      </div>
                     <div class="form-group col-md-12 d-flex p-0 m-0">
                       <label class="w-25">Discount</label>
                       <input type="text" class="form-control w-75" v-model="item.discount" @input="calculateGrandTotal(item)">
@@ -412,18 +430,18 @@
                     </div>
                   </div>
                   <div class="form-group col-md-12 d-flex justify-content-end">
-                    <button class="btn btn-danger btn-sm" @click="removeRow(index)">
+                    <button class="btn btn-danger btn-sm" @click="removeNewBidRow(index)">
                       <i class="fa fa-minus"></i> Remove Bidder
                     </button>
                   </div>
                 </div>
                 <div v-if="newBidFormRows.length > 0" class="form-group col-md-12 d-flex justify-content-end">
+                  <button class="btn btn-success btn-sm mr-3" @click="createNewBid">
+                    <i class="fa fa-save"></i> Submit New Bidders
+                  </button>
                   <button v-if="selectedPRNStatus == '1'" class="btn btn-info btn-sm" @click="addNewBid">
                     <i class="fa fa-plus"></i> Add New Bidder
                   </button> 
-                  <button class="btn btn-success btn-sm ml-3" @click="createNewBid">
-                    <i class="fa fa-save"></i> Submit New Bidders
-                  </button>
                 </div>
               </div>
               <!-- Loop over each bid -->
@@ -481,7 +499,6 @@
                       </tr>
                     </tbody>
                   </table>
-                  <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
                   <!-- Editable fields for bid -->
                   <div class="col-md-12 d-flex my-2 bg-light"><strong>Terms Condition:</strong>
                     <template v-if="item.isEditing">
@@ -547,23 +564,32 @@
                       {{ item.after_delivery }}
                     </template>
                   </div>
-                  <!-- Tax Input -->
-                  <div class="col-md-4 d-flex my-2 bg-light">
-                    <strong>Tax:</strong>
+                  <div class="col-md-12 text-right"><h6><strong>Subtotal:</strong> {{ getSubtotal(item.details).toFixed(2) }}</h6></div>
+                  <div class="col-md-5 ml-auto">
+                    <!-- Tax Input -->
+                  <div class="col-md-12 my-2 bg-light">
+                    <div class="d-flex">
+                      <strong>Tax %:</strong>
                     <template v-if="item.isEditing">
-                      <input
-                        type="number"
-                        class="form-control ml-2"
-                        v-model.number="item.tax"
+                      <input 
+                        type="text" 
+                        class="form-control" 
+                        placeholder="Enter Percentage of Tax" 
+                         v-model.number="item.tax"
                         @input="calculateGrandTotal(item)"
-                      />
+                      >
+                      <div class="input-group-append">
+                        <span class="input-group-text">%</span>
+                      </div>
                     </template>
                     <template v-else>
                       {{ item.tax }}
                     </template>
+                    </div>
+                    <div class="text-right"><small>Tax Amount: </small><strong> {{  item.tax_amount ?? 0 }}</strong></div>
                   </div>
                   <!-- Delivery Charges Input -->
-                  <div class="col-md-4 d-flex my-2 bg-light">
+                  <div class="col-md-12 d-flex my-2 bg-light">
                     <strong>Delivery Charges:</strong>
                     <template v-if="item.isEditing">
                       <input
@@ -578,7 +604,7 @@
                     </template>
                   </div>
                   <!-- Discount Input -->
-                  <div class="col-md-4 d-flex my-2 bg-light">
+                  <div class="col-md-12 d-flex my-2 bg-light">
                     <strong>Discount:</strong>
                     <template v-if="item.isEditing">
                       <input
@@ -592,6 +618,8 @@
                       {{ item.discount }}
                     </template>
                   </div>
+                  </div>
+                  
                   <!-- Grand Total Display -->
                   <div class="col-md-12 text-right mt-2">
                     <h6>
@@ -692,6 +720,7 @@ export default {
         contact_person: '',
         contact_person_contact: '',
         tax:'',
+        tax_amount:'',
         terms: '',
         total: '',
         products: [
@@ -770,6 +799,8 @@ export default {
           contact_person_contact: row.contact_person_contact,
           terms_condition: row.terms,
           tax: row.tax,
+          tax_amount: row.tax_amount,
+
           sub_total: row.sub_total,
           total_amount: row.total_amount,
           products: row.products.map(product => ({
@@ -780,26 +811,31 @@ export default {
         }))
       };
       console.log("Payload being submitted:", payload); // Check the payload
-      try {
         const response = await this.callApi('post', 'bid-summaries/store', payload);
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Bid Summary submitted successfully!'
-        });
-        this.fetchBid_PRN();
-        this.clearForm();
-      } catch (error) {
-        console.error('Bid submission failed:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error?.response?.data?.message || 'Submission failed.'
-        });
-      }
+        if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchBid_PRN();
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Created',
+              text: 'Bid Summary submitted successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        }  
      }, 
     async createNewBid() {
-      try {
+     
         const payload = {
           prn_id: this.selectedPRNId,
           mr_id: this.selectedMRId,
@@ -818,6 +854,7 @@ export default {
             contact_person_contact: row.contact_person_contact,
             terms_condition: row.terms,
             tax: row.tax,
+            tax_amount: row.tax_amount,
             sub_total: row.sub_total,
             total_amount: row.total_amount,
             products: row.products.map(product => ({
@@ -830,25 +867,33 @@ export default {
         const response = await this.callApi('post', 'bid-summaries/store', payload);
         const newBid = response.data; // Assuming this is the new bid data
         this.uniquePRNBids.push(newBid); // Assuming this is the array that holds the bid data
-        Swal.fire({
-          icon: 'success',
-          title: 'Success',
-          text: 'Bid Summary submitted successfully!'
-        });
         this.fetchBid_PRN();
         this.viewBidsByPRN(this.selectedPRNId);
         this.clearForm(); 
         this.newBidFormRows = [];
-      } catch (error) {
-        console.error('Bid submission failed:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: error?.response?.data?.message || 'Submission failed.'
-        });
+        if (response.status === 200 || response.status === 201) {
+            this.loading = false;
+            this.fetchBid_PRN();
+            this.clearForm();
+            return Swal.fire({
+              icon: 'success',
+              title: 'Created',
+              text: 'Bid Summary submitted successfully!',
+            });
+        } 
+        if(response.status == 422){ 
+            this.loading = false;
+             Swal.fire({
+              icon: 'error',
+              title: 'Validation Error',
+              text: 'Please fill all field',
+            });
+        }
+        else{
+            Swal.fire('Error', err.response?.data , 'error');
+        }  
         
-      }
-    },
+      },
     addRow() {
         if (!this.prnProducts || !this.prnProducts.length) {
           alert("Please select a PRN first to load products.");
@@ -872,6 +917,7 @@ export default {
           contact_person_contact: '',
           terms: '',
           tax: '',
+          tax_amount:'',
           products: this.prnProducts.map(p => ({
             product_id: p.id,
             name: p.name,
@@ -907,6 +953,7 @@ export default {
         contact_person_contact: '',
         terms: '',
         tax: '',
+        tax_amount: '',
         products: this.groupedBids[0].details.map(detail => ({
           product_id: detail.product_id,
           name: detail.product?.name,
@@ -917,7 +964,7 @@ export default {
       };
       this.newBidFormRows.push(newBid);
      },
-    removeRow(index) {
+     removeNewBidRow(index) {
         this.newBidFormRows.splice(index, 1);
         if (this.newBidFormRows.length === 0) {
           this.newBidFormRows = [];
@@ -935,11 +982,8 @@ export default {
     async fetchPRNProducts(prn) {
         try {
           const response = await this.callApi('post', 'prn/fetch-prn-products', { prn_id: prn.id });
-
           const productsFromPRN = response.data.products;
-
           this.prnProducts = productsFromPRN; // ✅ <-- THIS LINE IS CRUCIAL
-
           this.bidFormRows = [
             {
               id: Date.now(),
@@ -959,6 +1003,7 @@ export default {
               contact_person_contact: '',
               terms: '',
               tax: '',
+              tax_amount:'',
               products: productsFromPRN.map(p => ({
                 product_id: p.id,
                 name: p.name,
@@ -994,6 +1039,7 @@ export default {
             contact_person_contact:'',
             terms: '',
             tax: '',
+            tax_amount: '',
             products: [
               {
                 product_id: '',
@@ -1069,7 +1115,7 @@ export default {
        return details.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
      },
     async updateBid(item, index) {
-        try {
+        
           // Step 1: Calculate sub_total
           const sub_total = item.details.reduce((sum, detail) => {
             const qty = parseFloat(detail.qty) || 0;
@@ -1077,10 +1123,11 @@ export default {
             detail.total = qty * rate;
             return sum + detail.total;
           }, 0);
-          const tax = parseFloat(item.tax) || 0;
+          const tax      = parseFloat(item.tax) || 0; 
+          const taxAmount = (sub_total * tax) / 100;
           const discount = parseFloat(item.discount) || 0;
           const delivery = parseFloat(item.delivery_charges) || 0;
-          const total_amount = parseFloat((sub_total + tax + delivery - discount).toFixed(2));
+          const total_amount = parseFloat((sub_total + taxAmount + delivery - discount).toFixed(2));
           // Step 2: Prepare payload for API
           const payload = {
             id: item.id,
@@ -1095,6 +1142,7 @@ export default {
             terms_condition: item.terms || item.terms_condition || '',
             discount: discount,
             tax: tax,
+            tax_amount: taxAmount,
             delivery_charges: delivery,
             sub_total: sub_total,
             total_amount: total_amount,
@@ -1117,6 +1165,7 @@ export default {
               confirmButtonText: 'OK',
             });
             item.isEditing = false; 
+            this.clearForm();
             this.fetchBid_PRN(); 
           } else {
             Swal.fire({
@@ -1124,32 +1173,29 @@ export default {
               title: 'Update Failed',
               text: response.data?.message || 'Failed to update bid.',
             });
-          }
-        } catch (error) {
-          console.error(error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: error.response?.data?.details || 'An error occurred while updating the bid.',
-          });
-        }
+          } 
      },
-    calculateGrandTotal(item) {
+     calculateGrandTotal(item) {
         if (Array.isArray(item.details)) {
-            item.sub_total = item.details.reduce((sum, detail) => {
-              const qty = parseFloat(detail.qty) || 0;
-              const rate = parseFloat(detail.rate) || 0;
-              return sum + (qty * rate);
-            }, 0);
-          }
+          item.sub_total = item.details.reduce((sum, detail) => {
+            const qty  = parseFloat(detail.qty) || 0;
+            const rate = parseFloat(detail.rate) || 0;
+            return sum + (qty * rate);
+          }, 0);
+        }
+
         const sub = parseFloat(item.sub_total) || 0;
-        const tax = parseFloat(item.tax) || 0;
+        const tax = parseFloat(item.tax) || 0; // Treat tax as percentage
+        const taxAmount = (sub * tax) / 100;
+
         const discount = parseFloat(item.discount) || 0;
         const delivery = parseFloat(item.delivery_charges) || 0;
-  
-        const total = sub + tax + delivery - discount;
+
+        const total = sub + taxAmount + delivery - discount;
+        
+        item.tax_amount = parseFloat(taxAmount.toFixed(2)); // Optional: show tax amount separately
         item.total_amount = parseFloat(total.toFixed(2));
-     },
+      },
      async confirmDeleteBid(bidId, index) {
       const confirm = await Swal.fire({
         title: 'Are you sure?',
@@ -1197,6 +1243,6 @@ export default {
       script.referrerPolicy = "origin";
       document.head.appendChild(script);
      }, 
-  }
+  },
 };
 </script>

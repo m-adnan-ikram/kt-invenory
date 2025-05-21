@@ -32,7 +32,8 @@
                     <thead>
                       <tr>
                         <th>Sr No.</th>
-                        <th>Invoice #</th>
+                        <th>MR #</th>
+                        <th>SIN #</th>
                         <th>Date</th>
                         <th>Requested By</th>
                         <th>Action</th>
@@ -41,12 +42,13 @@
                     <tbody>
                       <tr v-for="(item, index) in outwards" :key="item.id">
                         <td>{{ index + 1 }}</td>
-                        <td>Invoice-{{ item.id }}</td>
+                        <td>MR-{{ item.mr_id }}</td>
+                        <td>SIN-{{ item.id }}</td>
                         <td>{{ new Date(item.created_at).toLocaleString() }}</td>
                         <td>{{ item.requested_by }}</td>
                         <td>
                           <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewOutwardModal" @click="viewOutward(item)">
-                            <i class="fas fa-eye"></i> View & Issue
+                            <i class="fas fa-eye"></i> View 
                           </button>
                         </td>
                       </tr>
@@ -85,7 +87,7 @@
                         <td>{{ mr.requested_by_user?.name || 'N/A' }}</td>
                         <td>
                           <button class="btn btn-info btn-sm" @click="viewMR(mr)">
-                          <i class="fas fa-eye"></i> View
+                          <i class="fas fa-eye"></i> View & Issue
                         </button>
                         </td>
                       </tr>
@@ -110,30 +112,41 @@
 
                   <div class="modal-body" v-if="selectedMR">
                     <table class="table table-bordered">
-                      <thead class="table-light bg-light border-top">
-                        <tr>
-                          <th>#</th>
-                          <th>Product</th>
-                          <th>Requested Qty</th>
-                          <th>Available Stock</th> 
-                          <th>Issuance Qty</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="(item, index) in selectedMR.details" :key="index">
-                          <td>{{ index + 1 }}</td>
-                          <td>{{ item.product?.name }}</td>
-                          <td>{{ item.qty }}</td>
-                          <td>{{ item.product?.qty }}</td>
-                          <td>
-                            <input type="number" class="form-control form-control-sm"
-                                :max="item.qty" :min="0" v-model.number="item.prnQty"
-                                :disabled="item.product?.qty === 0" placeholder="Enter Issuance Qty"
-                            />
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <thead class="table-light bg-light border-top">
+                      <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Requested Qty</th>
+                        <th>Available Stock</th>
+                        <th>Already Issued Qty</th>
+                        <th>Issuance Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, index) in selectedMR.details" :key="index">
+                        <td>{{ index + 1 }}</td>
+                        <td>{{ item.product?.name }}</td>
+                        <td>{{ item.qty }}</td>
+                        <td>{{ item.product?.qty }}</td>
+                        <td>{{ item.issued_qty || 0 }}</td>
+                        <td>
+                          <input
+                            type="number"
+                            class="form-control form-control-sm"
+                            :max="item.qty - (item.issued_qty || 0)"
+                            :min="0"
+                            v-model.number="item.prnQty"
+                            :disabled="item.product?.qty === 0"
+                            placeholder="Enter Issuance Qty"
+                          />
+                          <small class="text-muted d-block mt-1">
+                            Remaining: <strong>{{ item.qty - (item.issued_qty || 0) }}</strong>
+                          </small>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
                   </div>
 
                   <div class="modal-footer table-light bg-light border-top">
@@ -161,18 +174,14 @@
                       <tr>
                         <th>#</th>
                         <th>Product</th>
-                        <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Total</th>
+                        <th>Qty</th> 
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="(detail, index) in selectedOutward.details" :key="index">
                         <td>{{ index + 1 }}</td>
                         <td>{{ detail.product?.name }}</td>
-                        <td>{{ detail.qty }}</td>
-                        <td>{{ detail.rate }}</td>
-                        <td>{{ detail.qty * detail.rate }}</td>
+                        <td>{{ detail.qty }}</td> 
                       </tr>
                     </tbody>
                   </table>
@@ -192,6 +201,7 @@
   </template>
   
   <script>
+  import Swal from 'sweetalert2';
   import Add from '../../../components/Add.vue'; 
   import AddProductModal from '../modal/addProductsModal.vue'; 
   export default {
@@ -253,12 +263,10 @@
             this.selectedOutward = item; // Store selected item for modal display
          },
         async submitIssuance() {
-            try {
               // Prepare payload
               const payload = {
                 mr_id: this.selectedMR.id,
                 requested_by: this.selectedMR.requested_by_user?.name || 'Unknown', // adjust if needed
-                reason: this.selectedMR.reason || 'NA',
                 details: this.selectedMR.details
                   .filter(item => item.prnQty > 0)
                   .map(item => ({
@@ -273,17 +281,29 @@
                 return;
               }
               const response = await this.callApi("post", "outward/store", payload);
-              if (response.status == 200) {
-                this.$toast.success("Issuance submitted successfully.");
-                $('#viewMRModal').modal('hide');
-                this.fetchMRAndOutwards(); // refresh your data
-              } else {
-                this.$toast.error(response.data.message || "Submission failed.");
-              }
-            } catch (error) {
-              console.error("Error submitting Issuance:", error);
-              this.$toast.error("An error occurred while submitting the Issuance.");
-            }
+              console.log(response);
+              if (response.status === 200 || response.status === 201) {
+                    this.loading = false;
+                    $('#viewMRModal').modal('hide');
+                    this.fetchMRAndOutwards(); // refresh your data
+                    this.viewMR(this.selectedMR);
+                    return Swal.fire({
+                      icon: 'success',
+                      title: 'Issuaed',
+                      text: 'Stock Issued successfully!',
+                    });
+                } 
+                if(response.status == 422){ 
+                    this.loading = false;
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Validation Error',
+                      text: 'Please fill all field',
+                    });
+                }
+                else{
+                    Swal.fire('Error', err.response?.data , 'error');
+                } 
          },
         clearForm() {
               this.data = {
