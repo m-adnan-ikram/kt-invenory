@@ -11,7 +11,7 @@ class Product extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['name', 'unit_id', 'category_id', 'qty', 'avg_price'];
+    protected $fillable = ['name', 'unit_id', 'category_id', 'qty', 'avg_price','added_by'];
 
 
     public function unit()

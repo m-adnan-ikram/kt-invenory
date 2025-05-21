@@ -123,6 +123,7 @@ class PurchaseOrderController extends Controller
                     'total'       => $total,
                     'remaining'   => $total,
                     'status'      => '1',
+                    'added_by'     => auth()->id()
                 ]);
     
                 foreach ($poDetails as &$detail) {
@@ -153,28 +154,14 @@ class PurchaseOrderController extends Controller
     }
     public function show(Request $request)
     {
-        $poId = $request->po_id;
-        // Fetch all POs relted to this PRN
-       $pos = PurchaseOrder::with([
-            'supplier',
-            'poDetails.product',
-            'mr.requestedByUser',
-            'prn',
-        ])
-        ->where('id', $poId)
-        ->get();
-
-        if ($pos->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No Purchase Orders found for this PRN.',
-            ], 404);
-        }
+        $po = PurchaseOrder::with(['supplier', 'poDetails.product', 'goodReceiveNotes.details.product'])->where('id', $request->po_id)->get();
         return response()->json([
             'success' => true,
-            'pos' => $pos,
+            'pos' => $po
         ]);
     }
+    
+    
     public function getSingle(Request $request)
     {
         $po = PurchaseOrder::with('poDetails.product')

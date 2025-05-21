@@ -30,7 +30,7 @@ class StockInwardController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Data fetched successfully.',
-            'pos' => $pos,
+            'pos'     => $pos,
             'inwards' => $inwards,
         ]);
     }   
@@ -44,17 +44,19 @@ class StockInwardController extends Controller
         ]);
         DB::beginTransaction();
         try {
-             $po = PurchaseOrder::with('poDetails')->findOrFail($request->po_id);
+            $po = PurchaseOrder::with('poDetails')->findOrFail($request->po_id);
             // Step 1: Create GoodReceiveNote
             $grn = GoodReceiveNote::create([
                 'po_id'        => $po->id,
                 'supplier_id'  => $po->supplier_id,
                 'received_by'  => auth()->user()->name ?? 'System', // replace with real user
+                'added_by'     => auth()->id()
+
             ]);
             // Step 2: Iterate over products
             foreach ($request->products as $product) {
                 $productId   = $product['product_id'];
-                if($product['received_qty'] >0){
+                if($product['received_qty'] > 0){
                     $receivedQty = $product['received_qty'];
                     // Find matching poDetail
                     $poDetail = $po->poDetails->where('product_id', $productId)->first();

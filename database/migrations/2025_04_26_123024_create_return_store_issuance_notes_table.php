@@ -20,6 +20,7 @@ class CreateReturnStoreIssuanceNotesTable extends Migration
             $table->text('reason')->nullable();
             $table->string('returned_by');
             $table->string('approved_by')->nullable();
+            $table->string('added_by');
             $table->timestamps();
         });
     }

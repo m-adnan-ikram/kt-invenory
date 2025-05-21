@@ -18,6 +18,7 @@ class CreateMaterialRequestDetailsTable extends Migration
             $table->foreignId('mr_id')->constrained('material_requests')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('products');
             $table->integer('qty');
+            $table->integer('store_issued_qty')->nullable();
             $table->string('reason');
             $table->timestamps();
         });

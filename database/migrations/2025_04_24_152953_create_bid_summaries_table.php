@@ -22,6 +22,7 @@ class CreateBidSummariesTable extends Migration
             $table->decimal('total_amount', 10, 2);
             $table->decimal('total', 10, 2);
             $table->decimal('tax', 10, 2);
+            $table->decimal('tax_amount', 10, 2);
             $table->decimal('advance', 10, 2);
             $table->decimal('advance_amount', 10, 2);
             $table->decimal('after_delivery', 10, 2);
@@ -34,6 +35,7 @@ class CreateBidSummariesTable extends Migration
             $table->text('terms_condition');
             $table->string('quotation_date'); 
             $table->string('quotation_ref');  
+            $table->string('added_by');
             $table->timestamps();
         });
     }

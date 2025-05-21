@@ -15,11 +15,12 @@ class CreateStoreIssuanceNotesTable extends Migration
     {
         Schema::create('store_issuance_notes', function (Blueprint $table) {
             $table->id();
-            $table->string('requested_by');
-            $table->string('reason');
+            $table->string('requested_by'); 
             $table->foreignId('mr_id')
                 ->constrained('material_requests')
                 ->onDelete('cascade');
+            $table->string('status'); //1=uncomplete 2=completed
+            $table->string('added_by');
             $table->timestamps();
         });
     }

@@ -19,6 +19,7 @@ class CreateSuppliersTable extends Migration
             $table->string('contact');
             $table->string('address');
             $table->string('cnic');
+            $table->string('added_by');
             $table->timestamps();
         });
     }

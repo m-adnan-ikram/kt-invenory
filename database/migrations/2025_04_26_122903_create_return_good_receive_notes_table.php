@@ -19,6 +19,7 @@ class CreateReturnGoodReceiveNotesTable extends Migration
             $table->dateTime('return_date');
             $table->text('reason')->nullable();
             $table->string('handled_by');
+            $table->string('added_by');
             $table->timestamps();
         });
     }

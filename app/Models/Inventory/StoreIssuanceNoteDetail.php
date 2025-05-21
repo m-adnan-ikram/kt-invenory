@@ -13,5 +13,11 @@ class StoreIssuanceNoteDetail extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+    public function storeIssuanceNote()
+    {
+        return $this->belongsTo(StoreIssuanceNote::class, 'store_issuance_note_id');
+    }
+    
+   
     
 }

@@ -12,7 +12,7 @@ class PurchaseOrder extends Model
     protected $guarded = [];
     protected $fillable = [
         'bid_id', 'mr_id', 'prn_id', 'supplier_id',
-        'total', 'remaining', 'status'
+        'total', 'remaining', 'status','added_by'
     ];
     
     public function supplier()
@@ -50,6 +50,12 @@ class PurchaseOrder extends Model
     } 
     public function goodReceiveNotes() {
         return $this->hasMany(GoodReceiveNote::class, 'po_id');
-    }  
+    }   
+    public function details()
+    {
+        return $this->hasMany(GoodReceiveNoteDetail::class, 'good_receive_note_id');
+    } 
+
+
 }
 

@@ -10,10 +10,10 @@ class BidSummary extends Model
     use HasFactory;
     protected $guarded = [];
     protected $fillable = [
-        'prn_id', 'mr_id', 'status', 'supplier_id', 'total_amount', 'total',
+        'prn_id', 'mr_id', 'status', 'supplier_id', 'total_amount', 'total', 'tax_amount',
         'tax', 'advance', 'after_delivery', 'credit_days', 'discount', 
         'delivery_charges', 'contact_person', 'contact_person_contact', 
-        'terms_condition', 'quotation_date', 'quotation_ref','advance_amount','after_delivery_amount'
+        'terms_condition', 'quotation_date', 'quotation_ref','advance_amount','after_delivery_amount','added_by'
     ];
     
     public function supplier()

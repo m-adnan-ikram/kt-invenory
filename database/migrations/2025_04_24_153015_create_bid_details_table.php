@@ -23,6 +23,7 @@ class CreateBidDetailsTable extends Migration
             $table->decimal('discount', 10, 2);
             $table->decimal('delivery_charges', 10, 2);
             $table->decimal('tax', 10, 2);
+            $table->decimal('tax_amount', 10, 2);
             $table->decimal('net_amount', 10, 2);
             $table->timestamps();
         });

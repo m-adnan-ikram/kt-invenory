@@ -78,7 +78,6 @@ class ProductCategoryController extends Controller
                 'message' => 'Failed to delete category.',
             ], 500);
         }
-        
         return response()->json([
             'success' => true,
             'message' => 'Category deleted successfully.',

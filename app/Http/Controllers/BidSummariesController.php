@@ -57,9 +57,10 @@ class BidSummariesController extends Controller
                 $subTotal = $productTotals->sum();
                 // Supplier-level totals
                 $totalTax      = (float) ($supplier['tax'] ?? 0);
+                $totalTaxAmount     = (float) ($supplier['tax_amount'] ?? 0);
                 $totalDiscount = (float) ($supplier['discount'] ?? 0);
                 $totalDelivery = (float) ($supplier['delivery_charges'] ?? 0);
-                $grandTotal    = $subTotal + $totalTax + $totalDelivery - $totalDiscount;
+                $grandTotal    = $subTotal + $totalTaxAmount + $totalDelivery - $totalDiscount;
                 $advancePercent       = $supplier['advance_percent'] ?? 0;
                 $afterDeliveryPercent = $supplier['after_delivery_percent'] ?? 0;
                 $advanceAmount        = ($advancePercent / 100) * $grandTotal;
@@ -72,6 +73,7 @@ class BidSummariesController extends Controller
                     'total'                   => $subTotal,
                     'total_amount'            => $grandTotal,
                     'tax'                     => $totalTax,
+                    'tax_amount'              => $totalTaxAmount,
                     'advance'                 => $advanceAmount,
                     'advance_amount'          => $advancePercent,
                     'after_delivery'          => $afterDeliveryPercent,
@@ -85,6 +87,7 @@ class BidSummariesController extends Controller
                     'quotation_ref'           => $supplier['quotation_ref'],
                     'quotation_date'          => $supplier['quotation_date'] ?? now(),
                     'status'                  => 1,
+                    'added_by'                => auth()->id()
                 ]);
                 // Now distribute discount, tax, and delivery proportionally per product
                 foreach ($products as $product) {
@@ -94,6 +97,7 @@ class BidSummariesController extends Controller
                     $ratio = $subTotal > 0 ? $total / $subTotal : 0;
                     $discountShare = $ratio * $totalDiscount;
                     $taxShare      = $ratio * $totalTax;
+                    $taxAmount      = $ratio * $totalTaxAmount;
                     $deliveryShare = $ratio * $totalDelivery;
                     $netAmount     = $total + $taxShare + $deliveryShare - $discountShare;
                     BidDetail::create([
@@ -105,6 +109,7 @@ class BidSummariesController extends Controller
                         'discount'         => round($discountShare, 2),
                         'delivery_charges' => round($deliveryShare, 2),
                         'tax'              => round($taxShare, 2),
+                        'tax_amount'       => round($taxAmount, 2),
                         'net_amount'       => round($netAmount, 2),
                     ]);
                 }
@@ -194,16 +199,16 @@ class BidSummariesController extends Controller
         try {
              $summary = BidSummary::findOrFail($validated['id']); 
             $products = $validated['details'];
-
             // Calculate subtotal
             $subTotal = collect($products)->reduce(function ($carry, $product) {
                 return $carry + ($product['rate'] * $product['qty']);
             }, 0);
-
-            $totalTax = (float) ($validated['tax'] ?? 0);
+            $totalTax      = (float) ($validated['tax'] ?? 0);
+            $totalTaxAmount      = (float) ($validated['tax_amount'] ?? 0);
+            $totalTaxAmount= (float) ($validated['tax_amount'] ?? 0);
             $totalDiscount = (float) ($validated['discount'] ?? 0);
             $totalDelivery = (float) ($validated['delivery_charges'] ?? 0);
-            $grandTotal = $subTotal + $totalTax + $totalDelivery - $totalDiscount;
+            $grandTotal    = $subTotal + $totalTaxAmount + $totalDelivery - $totalDiscount;
 
             $advancePercent = $validated['advance_percent'] ?? 0;
             $afterDeliveryPercent = $validated['after_delivery_percent'] ?? 0;
@@ -215,6 +220,7 @@ class BidSummariesController extends Controller
                 'total' => $subTotal,
                 'total_amount' => $grandTotal,
                 'tax' => $totalTax,
+                'tax_amount' => $totalTaxAmount,
                 'advance' => $advancePercent,
                 'advance_amount' => $advanceAmount,
                 'after_delivery' => $afterDeliveryPercent,
@@ -252,6 +258,7 @@ class BidSummariesController extends Controller
                     'total' => $total,
                     'discount' => round($discountShare, 2),
                     'delivery_charges' => round($deliveryShare, 2),
+                    'tax' => round($taxShare, 2),
                     'tax' => round($taxShare, 2),
                     'net_amount' => round($netAmount, 2),
                 ]);

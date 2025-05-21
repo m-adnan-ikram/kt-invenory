@@ -9,7 +9,7 @@ class GoodReceiveNote extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['po_id', 'supplier_id', 'received_by'];
+    protected $fillable = ['po_id', 'supplier_id', 'received_by','added_by'];
     public function details()
     {
       return $this->hasMany(GoodReceiveNoteDetail::class, 'good_receive_note_id');

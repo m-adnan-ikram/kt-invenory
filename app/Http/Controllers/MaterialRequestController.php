@@ -5,26 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\MaterialRequestDetail;
 use App\Models\Inventory\Product;
+use App\Models\Inventory\StoreIssuanceNote;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class MaterialRequestController extends Controller
 {
-    //
-    // MaterialRequestController.php
+    
     public function index()
-{
-    $mrs = MaterialRequest::with(['details.product', 'requestedByUser'])->latest()->get(); // eager load 'requestedByUser' relation
-    $products = Product::get();
-
-    return response()->json([
-        'success'  => true,
-        'message'  => 'Material Requests fetched successfully.',
-        'data'     => $mrs,
-        'products' => $products,
-    ], 200);
-}
+    {
+        $mrs = MaterialRequest::with(['details.product', 'requestedByUser', 'storeIssuance.details'])->latest()->get();
+        $products = Product::all();
+        return response()->json([
+            'success'  => true,
+            'message'  => 'Material Requests fetched successfully.',
+            'data'     => $mrs,
+            'products' => $products,
+        ], 200);
+    }
+    
 
     public function store(Request $request)
     {
@@ -40,18 +40,18 @@ class MaterialRequestController extends Controller
             $mr = MaterialRequest::create([
                 'requested_by' => auth()->id(), 
                 'status'       => 1, 
+                'added_by'     => auth()->id()
             ]);
     
             foreach ($request->details as $detail) {
                 $mr->details()->create([
-                    'product_id' => $detail['product_id'],
-                    'qty'        => $detail['qty'],
-                    'reason'     => $detail['reason'],
+                    'product_id'      => $detail['product_id'],
+                    'qty'             => $detail['qty'],
+                    'store_Issued_qty' => 0,
+                    'reason'          => $detail['reason'],
                 ]);
             }
-    
-            DB::commit();
-    
+            DB::commit();    
             return response()->json([
                 'success' => true,
                 'message' => 'Material Request created successfully.',
@@ -69,19 +69,19 @@ class MaterialRequestController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'id'     => 'required|exists:material_request_details,id',
-            'qty'    => 'required|numeric|min:1',
-            'reason' => 'nullable|string',
+            'id'     => 'required',
+            'qty'    => 'required',
+            'reason' => 'nullable',
         ]);
-        $detail = MaterialRequestDetail::findOrFail($validated['id']);
-        $detail->update([
+        $mr     = MaterialRequestDetail::findOrFail($validated['id']); 
+        $mr->update([
             'qty'    => $validated['qty'],
             'reason' => $validated['reason'],
         ]);
         return response()->json([
             'success' => true,
             'message' => 'Material Request Detail updated successfully.',
-            'data'    => $detail,
+            'data'    => $mr,
         ], 200); // <== make sure to set status 200
     }    
     public function mr_destroy(Request $request)
@@ -89,10 +89,8 @@ class MaterialRequestController extends Controller
         $request->validate([
             'id' => 'required|integer|exists:material_requests,id',
         ]);
-    
         $materialRequest = MaterialRequest::findOrFail($request->id);
         $materialRequest->delete();
-    
         return response()->json([
             'success' => true,
             'message' => 'Material Request deleted successfully.',
@@ -104,10 +102,8 @@ class MaterialRequestController extends Controller
         $request->validate([
             'id' => 'required|integer|exists:material_request_details,id',
         ]);
-    
         $detail = MaterialRequestDetail::findOrFail($request->id);
         $detail->delete();
-    
         return response()->json([
             'success' => true,
             'message' => 'Material Request Detail deleted successfully.',

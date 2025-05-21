@@ -10,7 +10,7 @@ class MaintenanceRecord extends Model
     use HasFactory;
     protected $fillable = [
         'product_id', 'qty', 'maintenance_type', 'description',
-        'maintenance_date', 'next_due_date'
+        'maintenance_date', 'next_due_date','added_by'
     ];
     
 }

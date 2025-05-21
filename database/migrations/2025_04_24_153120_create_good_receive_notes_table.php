@@ -18,6 +18,7 @@ class CreateGoodReceiveNotesTable extends Migration
             $table->foreignId('po_id')->constrained('purchase_orders');
             $table->foreignId('supplier_id')->constrained('suppliers');
             $table->string('received_by');
+            $table->string('added_by');
             $table->timestamps();
         });
     }

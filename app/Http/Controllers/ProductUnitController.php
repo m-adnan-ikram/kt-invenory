@@ -12,7 +12,7 @@ class ProductUnitController extends Controller
     public function index()
     {
         $units = ProductUnit::withCount('products')
-            ->get()
+            ->latest()->get()
             ->map(function ($unit) {
                 $unit->is_deletable = $unit->products_count == 0;
                 return $unit;
@@ -45,8 +45,8 @@ class ProductUnitController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'id'    => 'required|exists:product_categories,id',
-            'name'  => 'required|string|max:255',
+            'id'    => 'required',
+            'name'  => 'required',
         ]);
         
         $unit = ProductUnit::findOrFail($request->input('id'));
@@ -66,7 +66,7 @@ class ProductUnitController extends Controller
     public function delete(Request $request)
     {
         $request->validate([
-            'id' => 'required|exists:product_units,id',
+            'id' => 'required',
         ]);
         
         $deleted = ProductUnit::destroy($request->input('id'));

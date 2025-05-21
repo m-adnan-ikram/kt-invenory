@@ -21,6 +21,7 @@ class CreateMaintenanceRecordsTable extends Migration
             $table->text('description')->nullable();
             $table->dateTime('maintenance_date');
             $table->dateTime('next_due_date')->nullable();
+            $table->string('added_by');
             $table->timestamps();
         });
     }

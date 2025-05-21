@@ -17,7 +17,7 @@ class PurchaseRequisitionNoteController extends Controller
         $mrs = MaterialRequest::with([
             'details.product',
             'requestedByUser'
-        ])->where('status', 1)->get();
+        ])->where('status', 1)->latest()->get();
     
         $prns = PurchaseRequisitionNote::with([
             'mr.requestedByUser',
@@ -47,8 +47,10 @@ class PurchaseRequisitionNoteController extends Controller
         try {
             // Create PRN header
             $prn = PurchaseRequisitionNote::create([
-                'mr_id'  => $validated['mr_id'],
-                'status' => 1,
+                'mr_id'     => $validated['mr_id'],
+                'status'    => 1,
+                'added_by'  => auth()->id()
+
             ]); 
             $mr = MaterialRequest::findOrFail($validated['mr_id']);
             $mr->status = 3;

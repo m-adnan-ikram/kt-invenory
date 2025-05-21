@@ -9,7 +9,7 @@ class ProductUnit extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['name'];
+    protected $fillable = ['name','added_by'];
     public function products()
     {
         return $this->hasMany(Product::class, 'unit_id');

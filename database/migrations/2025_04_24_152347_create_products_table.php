@@ -20,6 +20,7 @@ class CreateProductsTable extends Migration
             $table->foreignId('category_id')->constrained('product_categories');
             $table->integer('qty');
             $table->decimal('avg_price', 10, 2);
+            $table->string('added_by');
             $table->timestamps();
         });
     }
