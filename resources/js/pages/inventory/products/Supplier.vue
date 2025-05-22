@@ -234,7 +234,7 @@ export default {
   try {
     const response = await this.callApi('post', 'supplier');
     this.suppliers = response.data.suppliers; // ✅ Correct field
-    this.initializeDataTables()
+    this.initializeDataTables();
   } catch (error) {
     console.error(error);
   }

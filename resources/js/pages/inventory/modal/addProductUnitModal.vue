@@ -116,6 +116,7 @@ export default {
     try {
       const res = await this.callApi('post', 'inventory-product-unit');
       this.unitData = res.data.data;
+      this.$emit('unitChanged', this.unitData)
     } catch (err) {
       console.error(err);
     }

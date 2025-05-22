@@ -26,7 +26,7 @@
                 </div>
                 <div class="card-body">
                   <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover dataTable">
                       <thead>
                         <tr>
                           <th>Sr No.</th>
@@ -77,7 +77,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover">
+                  <table class="table table-striped table-hover dataTable">
                     <thead>
                       <tr>
                         <th>Sr No.</th> 
@@ -127,7 +127,7 @@
                 <div class="col-md-12">
                   <div class="card shadow-sm border">
                     <div class="table-responsive">
-                      <table class="table table-bordered table-striped align-middle text-center mb-0">
+                      <table class="table table-bordered table-striped align-middle text-center mb-0 dataTable">
                         <thead class="table-secondary">
                           <tr>
                             <th class="align-middle">#</th>
@@ -228,7 +228,7 @@
                     <div class="col-md-4"><strong>PRN #:</strong> PRN - {{ bid.prn?.id || 'N/A' }}</div>
                     <div class="col-md-12"><strong>Requested By:</strong> {{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</div>
 
-                    <table class="table table-bordered mt-2">
+                    <table class="table table-bordered mt-2 dataTable">
                       <thead class="thead-light">
                         <tr>
                           <th>#</th>
@@ -309,7 +309,7 @@
                   </div>
 
                   <!-- PO Details Table -->
-                  <table class="table table-bordered table-striped table-sm shadow-sm">
+                  <table class="table table-bordered table-striped table-sm shadow-sm dataTable">
                     <thead class="thead-dark text-center">
                       <tr>
                         <th>#</th>
@@ -462,7 +462,14 @@
      };
     },
     mounted() {
-      this.fetchBid_PO();
+      this.fetchBid_PO(); 
+    },
+    watch: {
+      activeTab() {
+        this.$nextTick(() => {
+          this.reinitDataTables();
+        });
+      }
     },
     computed: {
     posGroupedByPRN() {
@@ -513,6 +520,21 @@
      },
     },
     methods: {
+      reinitDataTables() {
+        // Destroy any existing DataTables
+        $('.dataTable').each(function () {
+          if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+          }
+        });
+        // Initialize after small delay to ensure DOM is updated
+        setTimeout(() => {
+          $('.dataTable').DataTable({
+            responsive: true,
+            autoWidth: false
+          });
+        }, 100);
+       },
       async fetchBid_PO() {
             try {
                 const response = await this.callApi('post', 'pos'); // API call to your controller
@@ -521,6 +543,9 @@
                     this.suppliers = response.data.suppliers || [];
                     this.products  = response.data.products || [];
                     this.pos       = response.data.pos || [];
+                    this.$nextTick(() => {
+                      this.reinitDataTables();
+                    });
                 }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
@@ -556,6 +581,7 @@
           this.success = ''
           this.showAddPOModal = true
           this.$nextTick(() => {
+            
             $('#BidModal').modal('show')
           })
         } else {
@@ -590,6 +616,7 @@
           if (res.data.success) {
             this.groupedBids = res.data.bids_by_prn; // Assign the correct bids
             this.$nextTick(() => {
+              
               $('#viewBidDetailModal').modal('show');
             });
           } else {
@@ -629,6 +656,7 @@
             this.loading = false;
             this.fetchBid_PO();
             this.$emit('close');
+            
             this.clearForm();
             return Swal.fire({
               icon: 'success',
@@ -653,9 +681,8 @@
           // Fetch the PO data for the given PRN ID
           const response = await this.callApi('post', 'pos/show', { po_id });
           if (response.data.success) {
-            // Update the selectedPOs and selectedGroup
             this.selectedPOs = response.data.pos;
-            // Add a slight delay before showing the modal to ensure the DOM is updated
+            
             setTimeout(() => {
               $('#viewPOModal').modal('show');
             }, 100); // Delay in milliseconds (100ms)

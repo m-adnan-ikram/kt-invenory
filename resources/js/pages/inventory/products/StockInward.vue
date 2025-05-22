@@ -27,7 +27,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover">
+                  <table class="table table-striped table-hover dataTable">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -68,7 +68,7 @@
                 </div>
                 <div class="card-body">
                   <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover dataTable">
                       <thead>
                         <tr>
                           <th>Sr No.</th>
@@ -208,7 +208,7 @@
                         <div class="col-md-12 mb-1"><strong>Address:</strong> {{ po.supplier?.address }}</div>
                       </div>
                     </div>
-                    <table class="table table-bordered table-striped table-sm shadow-sm">
+                    <table class="table table-bordered table-striped table-sm shadow-sm dataTable">
                     <thead class="thead text-center">
                       <tr>
                         <th class="py-2 px-3">#</th>
@@ -263,7 +263,7 @@
                   </button>
                 </div>
                 <div class="modal-body bg-light">
-                  <table class="table table-bordered table-sm">
+                  <table class="table table-bordered table-sm dataTable">
                     <thead>
                       <tr class="bg-light text-center">
                         <th>#</th>
@@ -367,15 +367,41 @@ import Add from '../../../components/Add.vue';
         };
         },
         mounted() {
-          this.fetchPOAndInwards(); 
+          this.fetchPOAndInwards();  
+        },
+        watch: {
+          activeTab() {
+            this.$nextTick(() => {
+              this.reinitDataTables();
+            });
+          }
         },
         methods: {
+          reinitDataTables() {
+            // Destroy any existing DataTables
+            $('.dataTable').each(function () {
+              if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().destroy();
+              }
+            });
+
+            // Initialize after small delay to ensure DOM is updated
+            setTimeout(() => {
+              $('.dataTable').DataTable({
+                responsive: true,
+                autoWidth: false
+              });
+            }, 100);
+          },
         async fetchPOAndInwards() {
             try {
               const response = await this.callApi('post', 'inward');
               if (response.status == 200) {
                 this.pos     = response.data.pos;
                 this.inwards = response.data.inwards;
+                this.$nextTick(() => {
+                  this.reinitDataTables();
+                });
               } else {
                 console.error("Error loading data", response.data.message);
               }
@@ -390,6 +416,7 @@ import Add from '../../../components/Add.vue';
               if (response.data.success) { 
                 this.selectedPOs = response.data.pos;  
                 this.fetchPOAndInwards(); 
+                 
                 setTimeout(() => {
                   $('#viewPOModal').modal('show');
                 }, 100); // Delay in milliseconds (100ms)
@@ -411,6 +438,7 @@ import Add from '../../../components/Add.vue';
                 };
 
                 this.$nextTick(() => {
+                   
                   $('#addInwardModal').modal('show');
                 });
               }
@@ -437,6 +465,7 @@ import Add from '../../../components/Add.vue';
                  if (response.status === 200 || response.status === 201) {
                     this.loading = false;
                     this.fetchPOAndInwards();
+                     
                     this.clearForm();
                     return Swal.fire({
                       icon: 'success',
@@ -461,14 +490,13 @@ import Add from '../../../components/Add.vue';
             const res = await this.callApi('post', 'inward/get-inward-details', { grn });
             this.selectedGRN = res.data;
             this.$nextTick(() => {
+               
               $('#inwardModal').modal('show');
             });
           } catch (error) {
             this.$swal('Error', 'Failed to fetch GRN details.', 'error');
           }
         },
-
- 
         clearForm() {
             this.data = {
             product_name: '',

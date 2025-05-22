@@ -115,6 +115,7 @@ export default {
     try {
       const res = await this.callApi('post', 'inventory-product-category');
       this.categoryData = res.data.data;
+      this.$emit('categoryChanged', this.categoryData)
     } catch (err) {
       console.error(err);
     }
@@ -126,10 +127,8 @@ export default {
       const response = await this.callApi('post', 'inventory-product-category/store', {
         category: this.newCategory,
       });
-
       const newCategory = response.data.data;
       this.categoryData.unshift(newCategory);
-
       this.newCategory = '';
       this.fetchCategories();
       if (response.status === 200 || response.status === 201) {

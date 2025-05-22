@@ -34,7 +34,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -73,10 +73,9 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
-                   
                       <th>Sr No.</th>
                       <th>MR #</th>
                       <th>PRN #</th>
@@ -124,7 +123,7 @@
                       </td>
                     </tr>
 
-                    <tr v-if="mrs.length === 0">
+                    <tr v-if="prns.length === 0">
                       <td colspan="6" class="text-center">No Purchase Requisition Note Found</td>
                     </tr>
                   </tbody>
@@ -144,7 +143,7 @@
               <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body" v-if="selectedMR">
-              <table class="table table-bordered">
+              <table class="table table-bordered dataTable">
                 <thead class="table-light bg-light border-top">
                   <tr>
                   <th>#</th>
@@ -204,7 +203,7 @@
 
             <h6 class="mb-3 fw-bold">Products</h6>
             <div class="table-responsive">
-              <table class="table table-striped table-hover align-middle">
+              <table class="table table-striped table-hover align-middle dataTable">
                 <thead class="table-light bg-light border-top">
                   <tr>
                     <th scope="col" class="text-center">#</th>
@@ -253,9 +252,31 @@ export default {
     };
   },
   mounted() {
-    this.fetchMR_PRN(); 
+    this.fetchMR_PRN();  
   },
-      methods: {
+  watch: {
+  activeTab() {
+    this.$nextTick(() => {
+        this.reinitDataTables();
+      });
+    }
+  },
+  methods: {
+    reinitDataTables() {
+    // Destroy any existing DataTables
+        $('.dataTable').each(function () {
+          if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+          }
+        });
+        // Initialize after small delay to ensure DOM is updated
+        setTimeout(() => {
+          $('.dataTable').DataTable({
+            responsive: true,
+            autoWidth: false
+          });
+        }, 100);
+     },
     async fetchMR_PRN() {
         try {
           const response = await this.callApi('post', 'prn');
@@ -263,11 +284,14 @@ export default {
             this.mrs = response.data.mrs;
             this.prns = response.data.prns;
             this.mrRequests = this.mrs.length;
+            this.$nextTick(() => {
+              this.reinitDataTables();
+            });
           }
         } catch (error) {
           console.error('Failed to fetch data:', error);
-        }
-      },
+        } 
+     },
     getStock(productName) {
       const product = this.stockList.find(p => p.product === productName);
       return product ? product.available : 0;
@@ -280,11 +304,12 @@ export default {
           issueQty: 0,
         }))
       };
+
       $('#viewMRModal').modal('show');
      },
     viewPRN(prn) {
-    this.selectedPRN = prn;
-    $('#viewPRNModal').modal('show');
+      this.selectedPRN = prn;
+      $('#viewPRNModal').modal('show');
      },
     issueSelectedItems(mr) {
       const issuedItems = mr.details.filter(item => item.issueQty > 0);
@@ -297,21 +322,23 @@ export default {
         if (stock) stock.available -= item.issueQty;
       });
       mr.status = 'issued';
-      $('#viewMRModal').modal('hide');
-      alert("MR items successfully issued.");
+      this.$nextTick(() => {
+  
+    });
+      $('#viewMRModal').modal('hide'); 
      },
     createPRNForRemaining(mr) {
-  this.remainingItems = mr.details
-    .filter(item => (item.qty - (item.issueQty || 0)) > 0)
-    .map(item => ({
-      product: item.product,
-      product_id: item.product.id,
-      qty: item.qty - (item.issueQty || 0),
-    }));
-  $('#prnModal').modal('show');
+      this.remainingItems = mr.details
+        .filter(item => (item.qty - (item.issueQty || 0)) > 0)
+        .map(item => ({
+          product: item.product,
+          product_id: item.product.id,
+          qty: item.qty - (item.issueQty || 0),
+        }));
+
+      $('#prnModal').modal('show');
      },
     async submitInlinePRN() {
-     
         const prnItems = this.selectedMR.details
           .filter(item => item.prnQty && item.prnQty > 0)
           .map(item => ({
@@ -330,19 +357,12 @@ export default {
         };
 
         const response = await this.callApi('post', 'prn/store', payload);
-
-        if (response.status === 200 || response.status === 201) {
-          Swal.fire('Success', response.data.message || 'PRN created successfully!', 'success');
-          $('#viewMRModal').modal('hide');
-          this.fetchMR_PRN();  // Refresh data
-        } else {
-          Swal.fire('Error', response.data.message || 'Something went wrong!', 'error');
-        }
-
+ 
         if (response.status === 200 || response.status === 201) {
             this.loading = false;
             this.fetchMR_PRN();  // Refresh data
             this.clearForm();
+      
             return Swal.fire({
               icon: 'success',
               title: 'Created',

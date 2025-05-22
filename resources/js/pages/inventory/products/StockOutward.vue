@@ -28,7 +28,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover">
+                  <table class="table table-striped table-hover dataTable">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -69,7 +69,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover">
+                  <table class="table table-striped table-hover dataTable">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -111,8 +111,8 @@
                   </div>
 
                   <div class="modal-body" v-if="selectedMR">
-                    <table class="table table-bordered">
-                    <thead class="table-light bg-light border-top">
+                    <table class="table table-bordered dataTable">
+                    <thead class="table-light bg-light border-top ">
                       <tr>
                         <th>#</th>
                         <th>Product</th>
@@ -169,7 +169,7 @@
                   <p><strong>Requested By:</strong> {{ selectedOutward.requested_by }}</p> 
                   <p><strong>Date:</strong> {{ new Date(selectedOutward.created_at).toLocaleString() }}</p>
 
-                  <table class="table table-bordered">
+                  <table class="table table-bordered dataTable">
                     <thead class="table-light bg-light border-top">
                       <tr>
                         <th>#</th>
@@ -232,15 +232,41 @@
         };
         },
         mounted() {
-          this.fetchMRAndOutwards(); 
+          this.fetchMRAndOutwards();  
         },
+        watch: {
+            activeTab() {
+              this.$nextTick(() => {
+                this.reinitDataTables();
+              });
+            }
+         },
         methods: {
+        reinitDataTables() {
+            // Destroy any existing DataTables
+            $('.dataTable').each(function () {
+              if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().destroy();
+              }
+            });
+
+            // Initialize after small delay to ensure DOM is updated
+            setTimeout(() => {
+              $('.dataTable').DataTable({
+                responsive: true,
+                autoWidth: false
+              });
+            }, 200);
+         },
         async fetchMRAndOutwards() {
             try {
               const response = await this.callApi('post', 'outward');
               if (response.data.success) { 
                 this.outwards = response.data.outwards || []; // Store Issuance Notes
                 this.mrs = response.data.mrs || [];           // Material Requests, if included
+                this.$nextTick(() => {
+                  this.reinitDataTables();
+                });
               } else {
                 console.error("Error loading data:", response?.data?.message || 'Unknown error');
               }
@@ -257,9 +283,11 @@
               prnQty: 0, // Use prnQty here to match the v-model in input
             }))
           };
+          
           $('#viewMRModal').modal('show'); // Trigger Bootstrap modal
          },
         viewOutward(item) {
+          
             this.selectedOutward = item; // Store selected item for modal display
          },
         async submitIssuance() {
@@ -287,6 +315,7 @@
                     $('#viewMRModal').modal('hide');
                     this.fetchMRAndOutwards(); // refresh your data
                     this.viewMR(this.selectedMR);
+                    
                     return Swal.fire({
                       icon: 'success',
                       title: 'Issuaed',

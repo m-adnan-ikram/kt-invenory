@@ -28,7 +28,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th> 
@@ -70,7 +70,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -130,7 +130,7 @@
               <!-- Modal Body -->
               <div class="modal-body">
                 <div v-if="selectedPRN && selectedPRN.details && selectedPRN.details.length">
-                  <table class="table table-bordered table-hover">
+                  <table class="table table-bordered table-hover dataTable">
                     <thead class="thead-light bg-light border-top">
                       <tr>
                         <th>#</th>
@@ -367,7 +367,7 @@
                   </div>
                   <div class="col-md-12">
                     <h5>Products Quoted</h5>
-                    <table class="table table-bordered">
+                    <table class="table table-bordered dataTable">
                       <thead>
                         <tr>
                           <th>#</th>
@@ -734,7 +734,7 @@ export default {
     ],
     };
    },
-  mounted() {
+  mounted() { 
       this.loadTinyMCE();
       this.fetchBid_PRN();
       const script = document.createElement('script');
@@ -759,7 +759,30 @@ export default {
         });
       }
     },
+    watch: {
+  activeTab() {
+    this.$nextTick(() => {
+          this.reinitDataTables();
+        });
+      }
+    },
   methods: {
+    reinitDataTables() {
+    // Destroy any existing DataTables
+    $('.dataTable').each(function () {
+      if ($.fn.DataTable.isDataTable(this)) {
+        $(this).DataTable().destroy();
+      }
+    });
+
+        // Initialize after small delay to ensure DOM is updated
+        setTimeout(() => {
+          $('.dataTable').DataTable({
+            responsive: true,
+            autoWidth: false
+          });
+        }, 100);
+      },
     removeNewBidForm() {
       this.newBidFormRows = [];
     },
@@ -772,6 +795,9 @@ export default {
           this.products    = response.data.products || [];
           this.suppliers   = response.data.suppliers || [];
           this.prnRequests = this.prns.length;
+          this.$nextTick(() => {
+          this.reinitDataTables();
+        });
         }
       } catch (error) {
         console.error('Failed to fetch bids and PRNs:', error);
@@ -815,6 +841,7 @@ export default {
         if (response.status === 200 || response.status === 201) {
             this.loading = false;
             this.fetchBid_PRN();
+    
             this.clearForm();
             return Swal.fire({
               icon: 'success',
@@ -869,6 +896,7 @@ export default {
         this.uniquePRNBids.push(newBid); // Assuming this is the array that holds the bid data
         this.fetchBid_PRN();
         this.viewBidsByPRN(this.selectedPRNId);
+
         this.clearForm(); 
         this.newBidFormRows = [];
         if (response.status === 200 || response.status === 201) {
@@ -926,7 +954,9 @@ export default {
             total: 0,
           })),
         });
+
      },
+     
     removeRow(index) {
       this.bidFormRows.splice(index, 1);
      },
@@ -969,6 +999,7 @@ export default {
         if (this.newBidFormRows.length === 0) {
           this.newBidFormRows = [];
         }
+
      },
     openBidModal(prn) {
         this.selectedPRN = prn;
@@ -977,6 +1008,7 @@ export default {
         this.groupedBids.forEach(item => {
         this.calculateSubTotal(item);
         this.calculateGrandTotal(item);
+
     });
      }, 
     async fetchPRNProducts(prn) {
@@ -1013,6 +1045,7 @@ export default {
               })),
             }
           ];
+  
         } catch (error) {
           console.error("Error fetching PRN products:", error);
         }
@@ -1061,6 +1094,7 @@ export default {
           this.groupedBids = res.data.bids_by_prn; // result will be an array of PRN objects with their bids
           const selectedBid = this.uniquePRNBids.find(bid => bid.prn?.id === prnId);
           this.selectedPRNStatus = selectedBid?.status;  
+  
           this.$nextTick(() => {
             $('#viewBidModal').modal('show');
           });
@@ -1158,6 +1192,7 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/update', payload);
           // Step 4: Handle response
           if (response.status == 200) {
+    
             Swal.fire({
               icon: 'success',
               title: 'Success!',
@@ -1213,6 +1248,7 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/delete', payload);
           const deletedPRNId = response.data.prn_id;  
           if (response.status == 200) {
+    
             Swal.fire({
               icon: 'success',
               title: 'Deleted!',

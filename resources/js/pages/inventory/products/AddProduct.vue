@@ -285,8 +285,8 @@
                 </div>
   
       <!-- Category/Unit Modals -->
-      <addProductCategoryModal></addProductCategoryModal>
-      <addProductUnitModal></addProductUnitModal>
+      <addProductCategoryModal @categoryChanged="categoryChanged($event)"></addProductCategoryModal>
+      <addProductUnitModal @unitChanged="unitChanged($event)"></addProductUnitModal>
     </section>
   </template>
   
@@ -327,26 +327,48 @@
     mounted() {
         this.fetchProducts();
      },
+     watch: {
+      activeTab() {
+        this.$nextTick(() => {
+          this.reinitDataTables();
+        });
+      }
+    },
     methods: {
-      initializeDataTables() {
-    this.$nextTick(() => {
-      $('.dataTable').each(function () {
-        if (!$.fn.DataTable.isDataTable(this)) {
-          $(this).DataTable();
-        }
-      });
-    });
-  },
+      reinitDataTables() {
+        // Destroy any existing DataTables
+        $('.dataTable').each(function () {
+          if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+          }
+        });
+
+        // Initialize after small delay to ensure DOM is updated
+        setTimeout(() => {
+          $('.dataTable').DataTable({
+            responsive: true,
+            autoWidth: false
+          });
+        }, 200);
+      },
     formatDate(date) {
       return new Date(date).toLocaleDateString('en-GB');
      },
+     categoryChanged( data ){
+        this.categoryOptions = data;
+      },
+      unitChanged( data ){
+        this.unitOptions = data;
+      },
     async fetchProducts() {
         try {
           const response = await this.callApi('post', 'inventory-product');
           this.products = response.data.products;
           this.categoryOptions = response.data.categories; // <-- set categories
           this.unitOptions = response.data.units;          // <-- set units
-          this.initializeDataTables();
+          this.$nextTick(() => {
+          this.reinitDataTables();
+          });
         } catch (error) {
           console.error('Error fetching products:', error);
         }

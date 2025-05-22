@@ -15,7 +15,7 @@
             <div class="card-body">
               <!-- MR List Table -->
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped dataTable">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -176,7 +176,7 @@
             </div>
             <div class="modal-body p-0">
               <div class="table-responsive">
-                <table class="table table-striped table-bordered table-hover mb-0">
+                <table class="table table-striped table-bordered table-hover mb-0 dataTable">
                   <thead class="bg-light">
                     <tr>
                       <th class="text-center">#</th>
@@ -263,7 +263,7 @@ import AddProductModal from '../modal/addProductsModal.vue';
         editDetailData: {}
       };
     },
-    mounted() {
+    mounted() { 
       this.fetchMRs();
       // Attach modal close listener for Bootstrap 4
       const modalEl = document.getElementById('viewMRModal');
@@ -282,13 +282,39 @@ import AddProductModal from '../modal/addProductsModal.vue';
         $(modalEl).off('hidden.bs.modal', this.cancelEdit);
       }
     },
+    watch: {
+      activeTab() {
+        this.$nextTick(() => {
+          this.reinitDataTables();
+        });
+      }
+    },
   methods: {
+    reinitDataTables() {
+        // Destroy any existing DataTables
+        $('.dataTable').each(function () {
+          if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+          }
+        });
+
+        // Initialize after small delay to ensure DOM is updated
+        setTimeout(() => {
+          $('.dataTable').DataTable({
+            responsive: true,
+            autoWidth: false
+          });
+        }, 200);
+      },
     async fetchMRs() {
       try {
         const response = await this.callApi('post', 'mr');  // Correct your API endpoint here
         this.mrs      = response.data.data;
         this.products = response.data.products;
         this.users    = response.data.users;
+        this.$nextTick(() => {
+          this.reinitDataTables();
+        });
       } catch (error) {
         console.error(error);
       }
