@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account\AccountHead;
+use App\Models\Account\AccountTransaction;
 use App\Models\Inventory\GoodReceiveNote;
 use App\Models\Inventory\GoodReceiveNoteDetail;
 use App\Models\Inventory\MaterialRequest;
@@ -9,6 +11,7 @@ use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseOrder;
 use App\Models\Inventory\PurchaseOrderDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -83,6 +86,7 @@ class StockInwardController extends Controller
                         'discount'             => $poDetail->discount,
                         'net_amount'           => $poDetail->net_amount, // or calculate net_amount per unit if needed
                     ]);
+                    
                     // Weighted average rate calculation
                     $product = Product::findOrFail($productId);
                     $totalOldValue = $product->qty * $product->rate;
@@ -130,4 +134,49 @@ class StockInwardController extends Controller
         return response()->json($inward);
     }
      
+    function accountHeadCreate($name, $first, $second, $third, $fourth) 
+    {
+        $existHead = AccountHead::where(["name"=>$name,"parent_account_id"=>$first,"account_id"=>$second,"parent_group_id"=>$third,"group_id"=>$fourth])->first();
+        if($existHead)
+        {
+            return $existHead;
+        }
+        $code = AccountHead::latest('id')->where('group_id', $fourth )->limit(1)->value('code') + 1;
+        $code = str_pad($code, 4, '0', STR_PAD_LEFT);
+        $head = AccountHead::create([
+            'name' => strtoupper($name),
+            'code' => $code,
+            'parent_account_id' => $first,
+            'account_id' => $second,
+            'parent_group_id' => $third,
+            'group_id' => $fourth,
+            'added_by' => Auth::user()->id,
+            'company_id' => Auth::user()->company_id,
+        ]);
+
+        return $head;
+    }
+    function updateSaleTransaction($head,$other_id,$credit,$debit,$document_id,$narration,$posting_id) 
+    {
+        AccountTransaction::create([
+            'terminal_id' => 1,
+            'account_head_id' => $head->id,
+            'other_account_head_id' => $other_id,
+            'credit' => $credit,
+            'debit' => $debit,
+            'document_id' => $document_id,
+            'type' => "JV",
+            'narration' => strtoupper($narration),
+            'posting_type' => 'GRN',
+            'posting_id' => $posting_id,
+            'approved' => 1,
+            'approved_by' => 0,
+            'parent_account_id' => $head->parent_account_id, 
+            'account_id' => $head->account_id, 
+            'parent_group_id' => $head->parent_group_id, 
+            'group_id' => $head->group_id, 
+            'added_by' => Auth::user()->id,
+            'company_id' => Auth::user()->company_id,
+        ]);
+    }
 }
