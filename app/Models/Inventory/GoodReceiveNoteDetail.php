@@ -13,7 +13,7 @@ class GoodReceiveNoteDetail extends Model
 
     protected $fillable = [
         'good_receive_note_id', 'product_id', 'qty', 'rate',
-        'total', 'tax', 'delivery_charges', 'discount', 'net_amount'
+        'total', 'tax', 'delivery_charges', 'discount', 'net_amount','company_id'
     ];
     public function product()
     {

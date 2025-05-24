@@ -18,6 +18,8 @@ class CreatePurchaseRequisitionNotesTable extends Migration
             $table->foreignId('mr_id')->constrained('material_requests');
             $table->string('status'); // 0= Rejected,  1 = Processing,  2 = Generated
             $table->string('added_by');
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

@@ -18,6 +18,8 @@ class CreatePurchaseRequisitionNoteDetailsTable extends Migration
             $table->foreignId('prn_id')->constrained('purchase_requisition_notes');
             $table->foreignId('product_id')->constrained('products');
             $table->integer('qty');
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

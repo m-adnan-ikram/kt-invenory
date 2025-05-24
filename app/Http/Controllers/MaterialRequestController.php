@@ -8,6 +8,7 @@ use App\Models\Inventory\Product;
 use App\Models\Inventory\StoreIssuanceNote;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class MaterialRequestController extends Controller
@@ -40,6 +41,7 @@ class MaterialRequestController extends Controller
             $mr = MaterialRequest::create([
                 'requested_by' => auth()->id(), 
                 'status'       => 1, 
+                'company_id'   => Auth::user()->company_id,
                 'added_by'     => auth()->id()
             ]);
     
@@ -49,6 +51,7 @@ class MaterialRequestController extends Controller
                     'qty'             => $detail['qty'],
                     'store_Issued_qty' => 0,
                     'reason'          => $detail['reason'],
+                    'company_id'      => Auth::user()->company_id,
                 ]);
             }
             DB::commit();    

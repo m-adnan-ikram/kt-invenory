@@ -20,12 +20,15 @@ class CreatePurchaseOrderDetailsTable extends Migration
             $table->decimal('qty', 10, 2);
             $table->decimal('rate', 10, 2);
             $table->decimal('sub_total', 10, 2);
-            $table->decimal('tax', 10, 2);
+            $table->decimal('tax'); // in percentage
+            $table->decimal('tax_amount', 10, 2); //in amount
             $table->decimal('delivery', 10, 2);
             $table->decimal('discount', 10, 2);
             $table->decimal('net_amount', 10, 2);
             $table->boolean('gate_receive_note')->default(false);
             $table->boolean('store_received')->default(false);
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

@@ -9,7 +9,7 @@ class MaterialRequestDetail extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['mr_id', 'product_id', 'qty','store_issued_qty', 'reason'];
+    protected $fillable = ['mr_id', 'product_id', 'qty','store_Issued_qty', 'reason','company_id'];
 
     // MaterialRequestDetail.php
     public function product()

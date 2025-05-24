@@ -24,6 +24,8 @@ class CreateGoodReceiveNotesDetailsTable extends Migration
             $table->decimal('delivery_charges', 10, 2);
             $table->decimal('discount', 10, 2);
             $table->decimal('net_amount', 10, 2);
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

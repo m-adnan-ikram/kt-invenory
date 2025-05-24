@@ -10,6 +10,7 @@ use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseOrder;
 use App\Models\Inventory\PurchaseOrderDetail;
+use App\Models\Inventory\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -53,12 +54,39 @@ class StockInwardController extends Controller
                 'po_id'        => $po->id,
                 'supplier_id'  => $po->supplier_id,
                 'received_by'  => auth()->user()->name ?? 'System', // replace with real user
-                'added_by'     => auth()->id()
+                'added_by'     => auth()->id(),
+                'company_id'   => Auth::user()->company_id,
 
             ]);
+            $document = AccountTransaction::where(["company_id"=>Auth::user()->company_id])
+            ->where("type","JV")
+            ->orderBy("document_id","DESC")
+            ->first();
+            $document_id = $document ? $document->document_id + 1 : 1;  
+
+            $supplierName = Supplier::where('id', $po->supplier_id)->first();
+            if ($supplierName->supplier_head_id) {
+                // Use existing account head
+                $supplierHead = AccountHead::findOrFail($supplierName->supplier_head_id);
+            } else {
+                // Create new account head
+                $supplierHead = $this->accountHeadCreate(
+                    $supplierName->name.'-'. $supplierName->cnic. ' | LIABILITIES LEDGER',
+                    2, // LIABILITIES
+                    8, // CURRENT LIABILITIES
+                    40, // TRADE CREDITORS
+                    41, // AP-SUPPLIERS
+                );
+                // Save new head ID in supplier table
+                $supplierName->supplier_head_id = $supplierHead->id;
+                $supplierName->save();
+            } 
+            $total_net_amount=0;
+            $sub_total=0;
             // Step 2: Iterate over products
             foreach ($request->products as $product) {
                 $productId   = $product['product_id'];
+                $productName = Product::where('id', $product['product_id'])->first();
                 if($product['received_qty'] > 0){
                     $receivedQty = $product['received_qty'];
                     // Find matching poDetail
@@ -74,32 +102,68 @@ class StockInwardController extends Controller
                     });
                     $po->status = $fullyReceived ? 2 : 1; // 3 = Fully Received, 2 = Partially Received
                     $po->save();
-                    // Insert GRN Detail
-                    GoodReceiveNoteDetail::create([
+                    $sub_total = ($poDetail->rate * $receivedQty) + $poDetail->tax_amount + $poDetail->delivery - $poDetail->discount;
+                    // Insert GRN Detail 
+                    $total_net_amount += $sub_total;
+                     GoodReceiveNoteDetail::create([
                         'good_receive_note_id' => $grn->id,
                         'product_id'           => $productId,
                         'qty'                  => $receivedQty,
                         'rate'                 => $poDetail->rate,
                         'total'                => $poDetail->rate * $receivedQty,
-                        'tax'                  => $poDetail->tax,
+                        'tax'                  => $poDetail->tax_amount,
                         'delivery_charges'     => $poDetail->delivery,
                         'discount'             => $poDetail->discount,
-                        'net_amount'           => $poDetail->net_amount, // or calculate net_amount per unit if needed
-                    ]);
+                        'net_amount'           => $sub_total, // or calculate net_amount per unit if needed
+                        'company_id'              => Auth::user()->company_id,
+                    ]);   
+                    if ($productName->product_head_id) {
+                        $productHead = AccountHead::findOrFail($productName->product_head_id);
+                    } else {
+                        // Create new account head
+                        $productHead = $this->accountHeadCreate(
+                            $productName->name . '-|PRODUCT LEDGER',
+                            1,  // ASSETS
+                            6,  // CURRENT ASSETS
+                            15, // STORE AND SPARES
+                            18  // GENERAL PARTS
+                        );
+                        // Save the new account head ID to the product
+                        $productName->product_head_id = $productHead->id;
+                        $productName->save();
+                    }
                     
-                    // Weighted average rate calculation
-                    $product = Product::findOrFail($productId);
-                    $totalOldValue = $product->qty * $product->rate;
-                    $totalNewValue = $receivedQty * $poDetail->rate;
-                    $newQty        = $product->qty + $receivedQty;
-                    $newAvgRate = $newQty > 0 ? ($totalOldValue + $totalNewValue) / $newQty : $poDetail->rate;
+                    $this->updateSaleTransaction(
+                        $productHead, // head
+                        $supplierHead->id,//other head id
+                        0, //credit
+                        $sub_total, //debit
+                        $document_id, //document id
+                        "Generated GRN of ".$productName->name." Received QTY@". $receivedQty ." with Price@". $poDetail->rate .$supplierName->name." with "."Delivery Charges@". $poDetail->delivery. " Tax@".$poDetail->tax." Discount@".$poDetail->discount,
+                        $grn->id //posting id
+                    );
+                  
+                    $totalValue = GoodReceiveNoteDetail::where('product_id', $productId)->sum('net_amount');
+                    $totalQty   = GoodReceiveNoteDetail::where('product_id', $productId)->sum('qty');
+                    $totalQTY = $productName->qty + $receivedQty;
+                    //Total average rate = ( average_rate * stock ) + (new_qty * new_rate) / total_stock + new_qty
+                    $newAvgRate =  $totalValue / $totalQty;
                     // Update product stock and rate
-                    $product->qty  = $newQty;
-                    $product->avg_price = $newAvgRate;
-                    $product->save();
+                    $productName->qty = $totalQTY;
+                    $productName->avg_price = $newAvgRate;
+                    $productName->save();
                 }
                 
             }
+            $this->updateSaleTransaction(
+                $supplierHead, // head
+                $productHead->id,//other head id
+                $total_net_amount, //credit
+                0, //debit
+                $document_id, //document id
+                "Generated GRN from ".$supplierName->name." with "."Delivery Charges@". $poDetail->delivery. "  Tax@".$poDetail->tax." Discount@'".$poDetail->discount,
+                $grn->id //posting id
+            );
             $mr = MaterialRequest::findOrFail($po->mr_id);
                 $mr->status = 6;
                 $mr->save();
@@ -180,3 +244,4 @@ class StockInwardController extends Controller
         ]);
     }
 }
+    

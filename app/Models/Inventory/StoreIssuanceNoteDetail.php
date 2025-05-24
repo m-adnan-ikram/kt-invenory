@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class StoreIssuanceNoteDetail extends Model
 {
     use HasFactory;
-    protected $fillable = ['store_issuance_note_id', 'product_id', 'qty', 'rate', 'total'];
+    protected $fillable = ['store_issuance_note_id', 'product_id', 'qty', 'rate', 'total','company_id'];
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');

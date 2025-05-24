@@ -24,8 +24,7 @@ class CityController extends Controller
     }
 
     public function store(Request $request)
-    {
-        return $request;
+    { 
         if(!checkPermissionButtons("add-city"))
         {
             return response()->json(["Error" => ['You are not authorized to access this url']], 403);

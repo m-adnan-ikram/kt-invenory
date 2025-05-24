@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inventory\ProductUnit;
 use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductUnitController extends Controller
 {
@@ -29,7 +30,8 @@ class ProductUnitController extends Controller
     public function store(Request $request)
     {
         $unit = ProductUnit::create([
-            'name' => $request->input('unit'),
+            'name'       => $request->input('unit'),
+            'company_id' => Auth::user()->company_id,
         ]);
         return response()->json([
             'success' => true,

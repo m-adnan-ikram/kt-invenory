@@ -10,7 +10,7 @@ class ReturnStoreIssuanceNote extends Model
     use HasFactory;
     protected $fillable = [
         'store_issuance_note_id', 'return_date', 'reason',
-        'returned_by', 'approved_by','added_by'
+        'returned_by', 'approved_by','added_by','company_id'
     ];
     
 }

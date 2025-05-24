@@ -25,6 +25,8 @@ class CreateBidDetailsTable extends Migration
             $table->decimal('tax', 10, 2);
             $table->decimal('tax_amount', 10, 2);
             $table->decimal('net_amount', 10, 2);
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

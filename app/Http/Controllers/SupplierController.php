@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierController extends Controller
 {
@@ -33,9 +34,10 @@ class SupplierController extends Controller
             'address' => 'required|string|max:500',
             'cnic'    => 'required|string|max:25',
         ]);
-
+        
+        $validated['company_id'] = Auth::user()->company_id;
         $supplier = Supplier::create($validated);
-
+        
         return response()->json([
             'message' => 'Supplier created successfully.',
             'supplier' => $supplier

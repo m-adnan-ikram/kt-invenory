@@ -9,6 +9,7 @@ use App\Models\Inventory\Product;
 use App\Models\Inventory\PurchaseRequisitionNote;
 use App\Models\Inventory\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -87,7 +88,8 @@ class BidSummariesController extends Controller
                     'quotation_ref'           => $supplier['quotation_ref'],
                     'quotation_date'          => $supplier['quotation_date'] ?? now(),
                     'status'                  => 1,
-                    'added_by'                => auth()->id()
+                    'company_id'              => Auth::user()->company_id,
+                    'added_by'                => auth()->id(),
                 ]);
                 // Now distribute discount, tax, and delivery proportionally per product
                 foreach ($products as $product) {
@@ -111,6 +113,8 @@ class BidSummariesController extends Controller
                         'tax'              => round($taxShare, 2),
                         'tax_amount'       => round($taxAmount, 2),
                         'net_amount'       => round($netAmount, 2),
+                         'company_id'      => Auth::user()->company_id,
+
                     ]);
                 }
             }

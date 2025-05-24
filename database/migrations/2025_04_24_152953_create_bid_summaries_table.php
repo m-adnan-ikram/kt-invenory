@@ -36,6 +36,7 @@ class CreateBidSummariesTable extends Migration
             $table->string('quotation_date'); 
             $table->string('quotation_ref');  
             $table->string('added_by');
+            $table->string('company_id');
             $table->timestamps();
         });
     }

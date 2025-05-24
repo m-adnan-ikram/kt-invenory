@@ -23,6 +23,8 @@ class CreatePurchaseOrdersTable extends Migration
             $table->decimal('remaining', 10, 2);
             $table->string('status'); // 0= Rejected,  1 = Processing,  2 = Generated
             $table->string('added_by');
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

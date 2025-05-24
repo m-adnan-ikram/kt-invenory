@@ -11,7 +11,7 @@ class BidDetail extends Model
     protected $guarded = [];
     protected $fillable = [
         'bid_id', 'product_id', 'qty', 'rate', 'total', 'discount',
-        'delivery_charges', 'tax', 'tax_amount', 'net_amount'
+        'delivery_charges', 'tax', 'tax_amount', 'net_amount','company_id'
     ];
     // Define the relationship with BidSummary
     public function bidSummary()

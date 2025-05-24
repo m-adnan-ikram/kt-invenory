@@ -20,6 +20,8 @@ class CreateSuppliersTable extends Migration
             $table->string('address');
             $table->string('cnic');
             $table->string('added_by');
+            $table->string('company_id');
+            $table->string('supplier_head_id');
             $table->timestamps();
         });
     }

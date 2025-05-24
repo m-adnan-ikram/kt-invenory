@@ -9,7 +9,7 @@ class PurchaseRequisitionNoteDetail extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['prn_id', 'product_id', 'qty'];
+    protected $fillable = ['prn_id', 'product_id', 'qty','company_id'];
 
     public function product()
     {

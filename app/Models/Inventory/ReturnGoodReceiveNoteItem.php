@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class ReturnGoodReceiveNoteItem extends Model
 {
     use HasFactory;
-    protected $fillable = ['return_good_receive_note_id', 'product_id', 'qty'];
+    protected $fillable = ['return_good_receive_note_id', 'product_id', 'qty','company_id'];
 
 }

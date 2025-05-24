@@ -12,7 +12,7 @@ class PurchaseOrder extends Model
     protected $guarded = [];
     protected $fillable = [
         'bid_id', 'mr_id', 'prn_id', 'supplier_id',
-        'total', 'remaining', 'status','added_by'
+        'total', 'remaining', 'status','added_by','company_id'
     ];
     
     public function supplier()

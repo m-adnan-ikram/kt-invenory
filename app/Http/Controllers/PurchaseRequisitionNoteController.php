@@ -6,6 +6,7 @@ use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\PurchaseRequisitionNote;
 use App\Models\Inventory\PurchaseRequisitionNoteDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -49,7 +50,8 @@ class PurchaseRequisitionNoteController extends Controller
             $prn = PurchaseRequisitionNote::create([
                 'mr_id'     => $validated['mr_id'],
                 'status'    => 1,
-                'added_by'  => auth()->id()
+                'added_by'  => auth()->id(),
+                'company_id'=> Auth::user()->company_id,
 
             ]); 
             $mr = MaterialRequest::findOrFail($validated['mr_id']);
@@ -62,11 +64,10 @@ class PurchaseRequisitionNoteController extends Controller
                     'prn_id'     => $prn->id,
                     'product_id' => $item['product_id'],
                     'qty'        => $item['qty'], 
+                    'company_id' => Auth::user()->company_id,
                 ]);
             }
-    
             DB::commit();
-    
             return response()->json([
                 'success' => true,
                 'message' => 'PRN created successfully.',

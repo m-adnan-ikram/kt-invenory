@@ -10,6 +10,7 @@ use App\Models\Inventory\ProductUnit;
 use App\Models\Inventory\PurchaseOrder;
 use App\Models\Inventory\PurchaseRequisitionNote;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -53,6 +54,8 @@ class ProductController extends Controller
                     'unit_id'     => $request->unit_id,
                     'qty'         => 0,
                     'avg_price'   => 0,
+                    'company_id'  => Auth::user()->company_id,
+
                 ]);
 
                 return response()->json([

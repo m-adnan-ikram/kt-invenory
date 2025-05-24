@@ -21,6 +21,8 @@ class CreateStoreIssuanceNotesTable extends Migration
                 ->onDelete('cascade');
             $table->string('status'); //1=uncomplete 2=completed
             $table->string('added_by');
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

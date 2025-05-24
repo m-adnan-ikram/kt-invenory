@@ -24,6 +24,8 @@ class CreateStoreIssuanceNotesDetailsTable extends Migration
             $table->integer('qty');
             $table->decimal('rate', 10, 2); 
             $table->decimal('total', 10, 2);
+            $table->string('company_id');
+
             $table->timestamps();
         });
     }

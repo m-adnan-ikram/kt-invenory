@@ -21,6 +21,8 @@ class CreateProductsTable extends Migration
             $table->integer('qty');
             $table->decimal('avg_price', 10, 2);
             $table->string('added_by');
+            $table->string('company_id');
+            $table->string('product_head_id');
             $table->timestamps();
         });
     }

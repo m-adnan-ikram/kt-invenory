@@ -10,7 +10,7 @@ class MaterialRequest extends Model
 {
     use HasFactory;
     protected $guarded = [];
-    protected $fillable = ['requested_by', 'status', 'added_by'];
+    protected $fillable = ['requested_by', 'status', 'added_by','company_id','store_Issued_qty'];
 
 
     public function details()

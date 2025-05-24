@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inventory\ProductCategory;
 use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ProductCategoryController extends Controller
 {
@@ -30,6 +31,7 @@ class ProductCategoryController extends Controller
         
         $category = ProductCategory::create([
             'name' => $request->input('category'),
+            'company_id'=> Auth::user()->company_id,
         ]);
 
         return response()->json([
