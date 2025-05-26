@@ -59,6 +59,7 @@ class PurchaseOrderController extends Controller
 
         DB::beginTransaction();
         try {
+            // Load all bid details with necessary relationships
             $details = BidDetail::with(['product', 'bids.supplier', 'bids.prn', 'bids.mr'])
                 ->whereIn('id', $validated['bid_detail_ids'])
                 ->get();
@@ -67,15 +68,27 @@ class PurchaseOrderController extends Controller
                 return response()->json(['message' => 'No valid bid details found.'], 404);
             }
 
-            $validDetails = $details->filter(fn($d) => $d->bids && $d->bids->supplier_id);
+            // Prevent duplicates: check if product already has a PO for the same bid
+            $usedProductIds = PurchaseOrderDetail::whereIn('product_id', $details->pluck('product_id'))
+                ->whereIn('po_id', PurchaseOrder::whereIn('bid_id', $details->pluck('bids.id'))->pluck('id'))
+                ->pluck('product_id')
+                ->unique()
+                ->toArray();
+
+            // Filter out any bid details with already used product for that bid
+            $validDetails = $details->filter(function ($d) use ($usedProductIds) {
+                return $d->bids && $d->bids->supplier_id && !in_array($d->product_id, $usedProductIds);
+            });
+
             if ($validDetails->isEmpty()) {
-                return response()->json(['message' => 'No bid details with valid supplier data.'], 400);
+                return response()->json(['message' => 'All selected products already have purchase orders.'], 400);
             }
 
-            $grouped = $validDetails->groupBy(fn($d) => $d->bids->supplier_id);
+            // Group by supplier ID
+            $groupedBySupplier = $validDetails->groupBy(fn($d) => $d->bids->supplier_id);
             $createdPOs = [];
 
-            foreach ($grouped as $supplierId => $supplierDetails) {
+            foreach ($groupedBySupplier as $supplierId => $supplierDetails) {
                 $firstDetail = $supplierDetails->first();
                 $bid = $firstDetail->bids;
                 $mr  = $bid->mr;
@@ -85,73 +98,76 @@ class PurchaseOrderController extends Controller
                     throw new \Exception("Missing bid, MR or PRN for supplier ID $supplierId");
                 }
 
-                // Fetch full-order charges from the bid
+                // Charges from the bid summary (to be distributed)
                 $deliveryCharges = floatval($bid->delivery_charges);
-                $totalTax        = floatval($bid->tax);
+                $totalTax        = floatval($bid->tax);         // percentage
+                $taxAmount       = floatval($bid->tax_amount);  // absolute
                 $totalDiscount   = floatval($bid->discount);
 
-                // Calculate total sub_total for proportional distribution
-                $totalSubTotal = $supplierDetails->sum(function ($detail) {
-                    return floatval($detail->qty) * floatval($detail->rate);
-                });
-
-                $total = 0;
+                $subTotalSum = $supplierDetails->sum(fn($d) => $d->qty * $d->rate);
                 $poDetails = [];
+                $poTotal = 0;
 
                 foreach ($supplierDetails as $detail) {
                     $qty      = floatval($detail->qty);
                     $rate     = floatval($detail->rate);
                     $subTotal = $qty * $rate;
 
-                    $proportion = $subTotal / ($totalSubTotal ?: 1); // Avoid divide by 0
+                    $proportion = $subTotal / ($subTotalSum ?: 1);
 
-                    $delivery  = round($deliveryCharges * $proportion);
-                    $tax_amount= round($bid->tax_amount * $proportion);
-                    $discount  = round($totalDiscount * $proportion);
+                    $delivery  = round($deliveryCharges * $proportion, 2);
+                    $tax_amt   = round($taxAmount * $proportion, 2);
+                    $discount  = round($totalDiscount * $proportion, 2);
 
-                    $netAmount = $subTotal + $tax_amount + $delivery - $discount;
-                    $total += $netAmount;
+                    $netAmount = $subTotal + $tax_amt + $delivery - $discount;
+                    $poTotal  += $netAmount;
 
                     $poDetails[] = [
                         'product_id' => $detail->product_id,
                         'qty'        => $qty,
                         'rate'       => $rate,
                         'sub_total'  => $subTotal,
-                        'tax'        => $totalTax, // Tax in percentage
-                        'tax_amount' => $tax_amount, // Tax in amount
+                        'tax'        => $totalTax,
+                        'tax_amount' => $tax_amt,
                         'delivery'   => $delivery,
                         'discount'   => $discount,
                         'net_amount' => $netAmount,
+                        'company_id' => auth()->user()->company_id,
                         'po_id'      => null,
                         'created_at' => now(),
                         'updated_at' => now(),
-                        'company_id' => Auth::user()->company_id,
                     ];
                 }
 
+                // Create PO
                 $po = PurchaseOrder::create([
                     'bid_id'      => $bid->id,
                     'mr_id'       => $mr->id,
                     'prn_id'      => $prn->id,
                     'supplier_id' => $supplierId,
-                    'total'       => $total,
-                    'remaining'   => $total,
-                    'status'      => '1',
+                    'total'       => $poTotal,
+                    'remaining'   => $poTotal,
+                    'status'      => 1,
                     'added_by'    => auth()->id(),
-                    'company_id'  => Auth::user()->company_id,
-
+                    'company_id'  => auth()->user()->company_id,
                 ]);
 
-                foreach ($poDetails as &$detail) {
-                    $detail['po_id'] = $po->id;
+                // Assign PO ID to each detail and insert
+                foreach ($poDetails as &$d) {
+                    $d['po_id'] = $po->id;
                 }
+
                 PurchaseOrderDetail::insert($poDetails);
-                $mr->status = 5;
-                $mr->save();
+
+                // Update related statuses
+                $mr->update(['status' => 5]);
                 $bid->update(['status' => 2]);
+
                 $createdPOs[] = $po->id;
             }
+
             DB::commit();
+
             return response()->json([
                 'message' => 'Purchase Orders created successfully.',
                 'po_ids'  => $createdPOs,
@@ -159,13 +175,16 @@ class PurchaseOrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('PO creation failed: ' . $e->getMessage());
+            Log::error('PO creation error: ' . $e->getMessage());
             return response()->json([
-                'message' => 'Failed to create purchase orders: ' . $e->getMessage(),
+                'message' => 'Failed to create purchase orders.',
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
 
+    
+ 
     public function show(Request $request)
     {
         $po = PurchaseOrder::with(['supplier', 'poDetails.product', 'goodReceiveNotes.details.product'])->where('id', $request->po_id)->get();
@@ -205,6 +224,4 @@ class PurchaseOrderController extends Controller
             ]
         ]);
     }
-    
-
 }

@@ -32,7 +32,10 @@ class BidDetail extends Model
     {
         return $this->belongsTo(BidSummary::class, 'bid_id');
     }
-    
+    public function purchaseOrders() {
+        return $this->hasMany(PurchaseOrderDetail::class, 'product_id', 'product_id')
+                    ->whereColumn('bid_id', 'id');
+    }
 
 }
 

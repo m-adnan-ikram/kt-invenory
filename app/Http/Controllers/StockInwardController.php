@@ -132,7 +132,6 @@ class StockInwardController extends Controller
                         $productName->product_head_id = $productHead->id;
                         $productName->save();
                     }
-                    
                     $this->updateSaleTransaction(
                         $productHead, // head
                         $supplierHead->id,//other head id
@@ -142,14 +141,23 @@ class StockInwardController extends Controller
                         "Generated GRN of ".$productName->name." Received QTY@". $receivedQty ." with Price@". $poDetail->rate .$supplierName->name." with "."Delivery Charges@". $poDetail->delivery. " Tax@".$poDetail->tax." Discount@".$poDetail->discount,
                         $grn->id //posting id
                     );
-                  
-                    $totalValue = GoodReceiveNoteDetail::where('product_id', $productId)->sum('net_amount');
-                    $totalQty   = GoodReceiveNoteDetail::where('product_id', $productId)->sum('qty');
-                    $totalQTY = $productName->qty + $receivedQty;
-                    //Total average rate = ( average_rate * stock ) + (new_qty * new_rate) / total_stock + new_qty
-                    $newAvgRate =  $totalValue / $totalQty;
-                    // Update product stock and rate
-                    $productName->qty = $totalQTY;
+                    // Calculate total value of previous stock
+                    $previousStockValue = $productName->avg_price * $productName->qty;
+                    // Extract charges from PO Detail
+                    $rate     = $poDetail->rate;
+                    $qty      = $receivedQty;
+                    $delivery = $poDetail->delivery;
+                    $tax      = $poDetail->tax_amount;
+                    $discount = $poDetail->discount;
+                    // Calculate net amount for received quantity (already saved in poDetail)
+                    $netTotal = $rate * $qty + $tax + $delivery - $discount;
+                    // Calculate net unit rate (real cost per unit after all charges)
+                    $netUnitRate = $qty > 0 ? $netTotal / $qty : $rate;
+                    // Calculate total new quantity and updated weighted average rate
+                    $totalQTY     = $productName->qty + $qty;
+                    $newAvgRate   = $totalQTY > 0 ? ($previousStockValue + $netTotal) / $totalQTY : $netUnitRate;
+                    // Update product stock and average price
+                    $productName->qty       = $totalQTY;
                     $productName->avg_price = $newAvgRate;
                     $productName->save();
                 }
