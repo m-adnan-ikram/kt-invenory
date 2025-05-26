@@ -163,13 +163,14 @@
                   <small class="text-danger" v-if="product.received_qty > getRemainingQty(product)">
                     ❌ You can't enter more than the remaining quantity ({{ getRemainingQty(product) }})
                   </small>
-                  <small class="text-danger" v-else-if="isCompleted(product)">
+                  <small class="text-success" v-else-if="isCompleted(product)">
                     ✅ Quantity fully received.
                   </small>
-                  <small class="text-danger" v-else>
+                  <small class="text-muted" v-else>
                     Max allowed: <b>{{ getRemainingQty(product) }}</b>
                   </small>
-              </div>
+                </div>
+
             </div>
 
             <div class="modal-footer">
@@ -443,12 +444,23 @@ import Add from '../../../components/Add.vue';
             const max = this.getRemainingQty(product);
             if (product.received_qty > max) {
               product.received_qty = max;
+            } else if (product.received_qty < 0) {
+              product.received_qty = 0;
             }
-        },
+          },
+
         isCompleted(product) {
             return product.received_qty_so_far >= product.total_qty;
         },
         async submitInward() {
+          const overfilled = this.products.find(p => p.received_qty > this.getRemainingQty(p));
+            if (overfilled) {
+              return Swal.fire({
+                icon: 'error',
+                title: 'Invalid Quantity',
+                text: `You entered more than allowed for ${overfilled.name || 'a product'}. Max: ${this.getRemainingQty(overfilled)}.`,
+              });
+            }
               const payload = {
                 po_id: this.selectedPO.id,
                 products: this.selectedPO.products.map(p => ({

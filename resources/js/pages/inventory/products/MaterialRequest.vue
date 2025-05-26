@@ -70,6 +70,11 @@
                           <button class="btn btn-info btn-sm mx-1" @click="viewMR(mr)" data-toggle="modal" data-target="#viewMRModal">
                             <i class="fas fa-eye"></i>
                           </button>
+                            <!-- Pass mr.id instead of full mr object -->
+                            <button class="btn btn-dark btn-sm mx-1" @click="printMR(mr.id)">
+                              <i class="fas fa-print"></i>
+                            </button>
+
                       </td>
                     </tr>
                   </tbody>
@@ -97,7 +102,7 @@
                     <label>Select Product</label>
                     <!-- <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button> -->
                   </div>
-                  <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control select2">
+                  <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control">
                     <option value="">Select</option>
                     <option v-for="prod in products" :key="prod.id" :value="prod.id">{{ prod.name }}</option>
                   </select>
@@ -236,6 +241,16 @@
           </div>
         </div>
       </div>
+      <!-- MR PDF submit form -->
+      <form :action="`${$store.state.api_url}api/web/v1/mr/pdf/${printMrId}`"
+        method="post" ref="printMRPdf" target="_blank"
+      >
+        <!-- Laravel requires token in headers or hidden input -->
+        <input type="hidden" name="token" :value="$store.state.token">
+        <input type="hidden" name="mr_id" :value="printMrId">
+      </form>
+
+
       <AddProductModal></AddProductModal>
     </div>
   </section>
@@ -244,13 +259,17 @@
 <script>
 import Swal from 'sweetalert2';
 import AddProductModal from '../modal/addProductsModal.vue'; 
+import vSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css'
 
   export default {
     components: { 
       AddProductModal,
+      vSelect,
     },
     data() {
       return {
+        printMrId: null,
         activeTab:'mr',
         formID: 'addMRForm',
         products: [],
@@ -456,6 +475,28 @@ import AddProductModal from '../modal/addProductsModal.vue';
         } 
       
      },
+     async printMR(id) {
+        try {
+          const response = await this.callApi(
+            'post',
+            `mr/pdf/${id}`,
+            {}, // POST body
+            {
+              responseType: 'blob' // Ensure PDF blob response
+            }
+          );
+
+          // Create Blob and open in new tab
+          const fileURL = window.URL.createObjectURL(
+            new Blob([response.data], { type: 'application/pdf' })
+          );
+          window.open(fileURL);
+        } catch (error) {
+          console.error('PDF generation failed:', error);
+          // Optionally, show a toast or alert
+        }
+      },
+
     beforeUnmount() {
       const modalEl = document.getElementById('viewMRModal');
       if (modalEl) {

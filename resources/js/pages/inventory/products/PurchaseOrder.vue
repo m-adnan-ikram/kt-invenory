@@ -52,7 +52,7 @@
                             <td>BID - {{ po.bid_id }}</td>
                             <td>{{ new Date(po.created_at).toLocaleString() }}</td>
                             <th>{{ po.total }} PKR</th>
-                            <th>{{ po.total - po.remaining  }} PKR</th>
+                            <th>{{ po.remaining  }} PKR</th>
                             <td>{{ po.mr.requested_by_user.name }} PKR</td>
                             <td>{{ po.supplier.name }}</td>
                             <td>
@@ -144,31 +144,27 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr
-                            v-for="(product, pIndex) in uniqueProducts"
-                            :key="'prod-' + pIndex"
-                          >
+                          <tr v-for="(product, pIndex) in uniqueProducts" :key="'prod-' + pIndex">
                             <td>{{ pIndex + 1 }}</td>
                             <td class="fw-semibold text-start ps-3">{{ product }}</td>
                             <td
                               v-for="(supplier, sIndex) in selectedSuppliers"
                               :key="'cell-' + pIndex + '-' + sIndex"
                             >
-                              <div v-if="getRate(product, supplier.id)">
+                              <template v-if="getDetail(product, supplier.id)">
                                 <span class="mb-1 fw-semibold mr-2">
-                                  {{ getRate(product, supplier.id).toLocaleString() }}
+                                  {{ getDetail(product, supplier.id).rate.toLocaleString() }}
                                 </span>
-                                  <input
-                                      type="checkbox"
-                                      class="checkbox-custom"
-                                      v-model="selectedDetails"
-                                      :value="getDetailId(product, supplier.id)"
-                                  />
-                              </div>
+                                <input
+                                  type="checkbox"
+                                  class="checkbox-custom"
+                                  v-model="selectedDetails"
+                                  :value="getDetail(product, supplier.id).id"
+                                />
+                              </template>
                               <span v-else class="text-muted">—</span>
                             </td>
                           </tr>
-                           
                           <tr>
                             <th>Delivery Charges</th>
                             <td></td>
@@ -180,7 +176,7 @@
                             <th>Tax</th>
                             <td></td>
                             <td v-for="supplier in selectedSuppliers" :key="'tax-' + supplier.id">
-                              {{ getField(supplier.id, 'tax') || '—' }}
+                              {{ getField(supplier.id, 'tax_amount') || '—' }}
                             </td>
                           </tr>
                           <tr>
@@ -595,11 +591,17 @@
         const detail = bid.details.find(d => d.product?.name === productName)
         return detail?.rate || null
       },
-      getDetailId(productName, supplierId) {
-        const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
-        if (!bid) return null
-        const detail = bid.details.find(d => d.product?.name === productName)
-        return detail?.id || null
+      getSupplierIdFromDetail(detailId) {
+        const bid = this.selectedBids.find(b =>
+          b.details.some(d => d.id === detailId)
+        );
+        return bid?.supplier?.id || null;
+      },
+      // also keep your existing method:
+      getDetail(productName, supplierId) {
+        const bid = this.selectedBids.find(b => b.supplier?.id === supplierId);
+        if (!bid) return null;
+        return bid.details.find(d => d.product?.name === productName) || null;
       },
       getField(supplierId, field) {
         const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
@@ -637,6 +639,7 @@
         ).toFixed(2);
       },
       async add() {
+        this.selectedDetails = this.selectedDetails.filter(id => id); // clean nulls
         if (!this.selectedDetails.length) {
           this.$emit('error', 'Please select at least one bid detail.');
           return;
@@ -644,9 +647,12 @@
         this.loading = true;
         const payload = {
           bid_detail_ids: this.selectedDetails
-        };  
+        };
+        try {
           const response = await this.callApi('post', 'pos/store', payload);
           if (response.status === 200 || response.status === 201) {
+            console.log(response);
+            
             $(".dataTable1").DataTable().destroy();
             this.loading = false;
             this.fetchBid_PO();
@@ -657,18 +663,20 @@
               title: 'Created',
               text: 'Purchase Orders created successfully!',
             });
-        } 
-        if(response.status == 422){ 
+          }
+
+          if (response.status === 422) {
             this.loading = false;
-             Swal.fire({
+            return Swal.fire({
               icon: 'error',
               title: 'Validation Error',
               text: 'Please fill all field',
             });
+          }
+        } catch (err) {
+          this.loading = false;
+          Swal.fire('Error', err.response?.data || 'Unexpected error', 'error');
         }
-        else{
-            Swal.fire('Error', err.response?.data , 'error');
-        } 
       },
       async viewPODetail(po_id) {
         try {
