@@ -169,7 +169,7 @@ class StockInwardController extends Controller
                 $total_net_amount, //credit
                 0, //debit
                 $document_id, //document id
-                "Generated GRN from ".$supplierName->name." with "."Delivery Charges@". $poDetail->delivery. "  Tax@".$poDetail->tax." Discount@'".$poDetail->discount,
+                "Generated GRN with "."Delivery Charges@". $poDetail->delivery. "  Tax@".$poDetail->tax." Discount@'".$poDetail->discount,
                 $grn->id //posting id
             );
             $mr = MaterialRequest::findOrFail($po->mr_id);

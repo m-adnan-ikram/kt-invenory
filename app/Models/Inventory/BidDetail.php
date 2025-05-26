@@ -18,7 +18,10 @@ class BidDetail extends Model
     {
         return $this->belongsTo(BidSummary::class);
     }
-
+    public function bid()
+    {
+        return $this->belongsTo(BidSummary::class, 'bid_id');
+    }
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');

@@ -55,6 +55,7 @@ Route::middleware(['auth:sanctum'])->prefix('web/v1/mr')->group(function () {
     Route::post('detail-update', [MaterialRequestController::class, 'update']);
     Route::post('mr-delete', [MaterialRequestController::class, 'mr_destroy']);
     Route::post('detail-delete', [MaterialRequestController::class, 'destroy']);
+    Route::any('pdf/{id}', [MaterialRequestController::class, 'mrPDF'])->middleware('auth:sanctum');
 });
 // Products
 Route::middleware(['auth:sanctum'])->prefix('web/v1/inventory-product')->group(function () {

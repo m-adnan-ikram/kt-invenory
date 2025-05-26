@@ -140,7 +140,7 @@ class StockOutwardController extends Controller
                     $sub_total, //credit
                     0, //debit
                     $document_id, //document id
-                    "Generated Issuance of ".$product->name." Issued QTY is @". $detail['qty'] ."' Rate this Issuance is @".$product->avg_price,
+                    "Generated Issuance of ".$product->name." Issued QTY is @". $detail['qty'] ." Avg Rate of this Issuance is @".$product->avg_price,
                     $storeIssuance->id //posting id
                 ); 
             }
@@ -150,7 +150,7 @@ class StockOutwardController extends Controller
                 0, //credit
                 $total_net_amount, //debit
                 $document_id, //document id
-                "Generated Issuance of ".$product->name." Issued QTY is @". $detail['qty'] ."' Rate this Issuance is @".$product->avg_price,
+                "Generated Issuance of ".$product->name." Issued QTY is @". $detail['qty'] ." Avg Rate of this Issuance is @".$product->avg_price,
                 $storeIssuance->id //posting id
             );
             // Load MR and all its details

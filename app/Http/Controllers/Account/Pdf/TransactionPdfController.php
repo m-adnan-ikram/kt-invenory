@@ -114,9 +114,7 @@ class TransactionPdfController extends BaseController
                 $pdf->setLanguageArray($l);
             }
             // ---------------------------------------------------------
-    
-    
-    
+
             // set font
             $pdf->setPrintFooter(false);
             // add a page
@@ -246,7 +244,6 @@ class TransactionPdfController extends BaseController
     
             return $pdf->Output('voucher.pdf', 'I');
     }
-
     public function receiptPdf(Request $request)
     {
         $heading = '';
@@ -547,8 +544,7 @@ class TransactionPdfController extends BaseController
         $pdf->Cell(180, 0, 'Printed By : ' . $user_name . ' || ' . $date_now, 0, 0, 'C', 0, '', 0, false, 'T', 'M');
 
         $pdf->Output('receipt.pdf', 'I');
-    }
-    
+    }   
     public function generalLedgerPdf(Request $request)
     {
         $heads = AccountHead::where(["company_id"=>Auth::user()->company_id,"group_id"=>$request->level_four])->pluck('id');
@@ -939,8 +935,7 @@ class TransactionPdfController extends BaseController
 
         // Output PDF
         $pdf->Output('general_ledger_report.pdf', 'I');
-    }
-    
+    } 
     public function journalPdf(Request $request)
     {
         $terminal = Terminal::where("id",$request->terminal)->first();
@@ -1130,7 +1125,6 @@ class TransactionPdfController extends BaseController
         // Output PDF
         $pdf->Output('general_ledger_report.pdf', 'I');
     }
-    
     public function generalTrialPdf(Request $request)
     {
         $terminal = Terminal::where("id",$request->terminal)->first();
@@ -1332,8 +1326,7 @@ class TransactionPdfController extends BaseController
 
         // Output PDF
         $pdf->Output('general_ledger_report.pdf', 'I');
-    }
-    
+    }  
     public function dailyReportPdf(Request $request)
     {
         $terminal = Terminal::where("id",$request->terminal)->first();
@@ -1548,7 +1541,7 @@ class TransactionPdfController extends BaseController
     }
 }
 
-include(public_path().'/assets/tcpdf/tcpdf.php');
+include(public_path().'/assets/tcpdf/tcpdf.php');   
 class MYPDF extends TCPDF
 {
     public $heading, $terminal;
@@ -1556,8 +1549,6 @@ class MYPDF extends TCPDF
     public function Header()
     {
     }
-
-
     public function Footer()
     {
     }
