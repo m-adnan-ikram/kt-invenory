@@ -25,7 +25,7 @@
                     </div>
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
-                          <table class="table table-striped table-hover dataTable">
+                          <table class="table table-striped table-hover dataTable1">
                             <thead>
                               <h5 class="modal-title" id="">Product Units</h5>
                               <tr>
@@ -107,6 +107,15 @@ export default {
   mounted() {
     this.fetchUnits();
   },
+  watch: {
+      activeTab(newTab) {
+        this.$nextTick(() => {
+          // Destroy any existing DataTable instance before re-initializing
+          $('.dataTable1').DataTable().destroy();
+          $('.dataTable1').DataTable();
+        });
+      },
+    },
   methods: {
     formatDate(dateStr) {
     const date = new Date(dateStr);
@@ -117,6 +126,9 @@ export default {
       const res = await this.callApi('post', 'inventory-product-unit');
       this.unitData = res.data.data;
       this.$emit('unitChanged', this.unitData)
+      this.$nextTick(() => {
+       $('.dataTable1').DataTable(); // Initial setup after data load
+      });
     } catch (err) {
       console.error(err);
     }
@@ -132,8 +144,10 @@ export default {
       this.newUnit = '';
       console.log(response);
       
-      if (response.status === 200 || response.status === 201) {
-            this.loading = false;
+      if (response.status === 200 || response.status === 201) {    
+        $(".dataTable1").DataTable().destroy();   
+        this.loading = false;
+        this.fetchUnits();
             return Swal.fire({
               icon: 'success',
               title: 'Unit Added',
@@ -176,7 +190,9 @@ async submitUnitEdit() {
     this.editId = null;
 
     if (response.status === 200 || response.status === 201) {
+      $(".dataTable1").DataTable().destroy();
             this.loading = false;
+            this.fetchUnits();
             return Swal.fire({
               icon: 'success',
               title: 'Unit Updated',
@@ -223,7 +239,9 @@ async deleteUnitRow(id, index) {
     // Instantly remove from local array
     this.unitData.splice(index, 1);
     if (response.status === 200 || response.status === 201) {
+      $(".dataTable1").DataTable().destroy();
             this.loading = false;
+            this.fetchUnits();
             return Swal.fire({
               icon: 'success',
               title: 'Unit Deleted',

@@ -34,7 +34,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable">
+                <table class="table table-striped table-hover dataTable1">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -73,7 +73,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable">
+                <table class="table table-striped table-hover dataTable1">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -133,7 +133,6 @@
           </div>
         </div>
       </div>
-
       <!-- MR Details Modal -->
       <div class="modal fade" id="viewMRModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -253,30 +252,19 @@ export default {
   },
   mounted() {
     this.fetchMR_PRN();  
-  },
+  }, 
   watch: {
-  activeTab() {
-    this.$nextTick(() => {
-        this.reinitDataTables();
-      });
-    }
-  },
-  methods: {
-    reinitDataTables() {
-    // Destroy any existing DataTables
-        $('.dataTable').each(function () {
-          if ($.fn.DataTable.isDataTable(this)) {
-            $(this).DataTable().destroy();
-          }
+      activeTab(newTab) {
+        this.$nextTick(() => {
+          // Destroy any existing DataTable instance before re-initializing
+          $('.dataTable1').DataTable().destroy();
+          $('.dataTable1').DataTable();
         });
-        // Initialize after small delay to ensure DOM is updated
-        setTimeout(() => {
-          $('.dataTable').DataTable({
-            responsive: true,
-            autoWidth: false
-          });
-        }, 100);
-     },
+      },
+    },
+
+  methods: {
+ 
     async fetchMR_PRN() {
         try {
           const response = await this.callApi('post', 'prn');
@@ -285,13 +273,13 @@ export default {
             this.prns = response.data.prns;
             this.mrRequests = this.mrs.length;
             this.$nextTick(() => {
-              this.reinitDataTables();
+              $('.dataTable1').DataTable(); // Initial setup after data load
             });
           }
         } catch (error) {
           console.error('Failed to fetch data:', error);
         } 
-     },
+    },
     getStock(productName) {
       const product = this.stockList.find(p => p.product === productName);
       return product ? product.available : 0;
@@ -350,19 +338,15 @@ export default {
           Swal.fire('Warning', 'No PRN quantities entered.', 'warning');
           return;
         }
-
         const payload = {
           mr_id: this.selectedMR.id,
           items: prnItems
         };
-
         const response = await this.callApi('post', 'prn/store', payload);
- 
         if (response.status === 200 || response.status === 201) {
+          $(".dataTable1").DataTable().destroy();
             this.loading = false;
-            this.fetchMR_PRN();  // Refresh data
-            this.clearForm();
-      
+            this.fetchMR_PRN();
             return Swal.fire({
               icon: 'success',
               title: 'Created',

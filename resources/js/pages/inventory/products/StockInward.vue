@@ -27,7 +27,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable">
+                  <table class="table table-striped table-hover dataTable1">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -68,7 +68,7 @@
                 </div>
                 <div class="card-body">
                   <div class="table-responsive">
-                    <table class="table table-striped table-hover dataTable">
+                    <table class="table table-striped table-hover dataTable1">
                       <thead>
                         <tr>
                           <th>Sr No.</th>
@@ -149,18 +149,26 @@
               </div>
               <!-- Newly Received -->
               <div class="form-group col-md-3">
-                <label>Received Quantity <span class="text-danger">*</span></label>
-                <input
-                  type="number"
-                  class="form-control"
-                  placeholder="Enter Received Quantity"
-                  v-model.number="product.received_qty"
-                  :max="getRemainingQty(product)"
-                  min="0"
-                />
-                <small class="text-danger">
-                  Max allowed: <b>{{ getRemainingQty(product) }}</b>
-                </small>
+                  <label>Received Quantity <span class="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    placeholder="Enter Received Quantity"
+                    v-model.number="product.received_qty"
+                    :max="getRemainingQty(product)"
+                    min="0"
+                    @input="validateQty(product)"
+                    :disabled="isCompleted(product)"
+                  />
+                  <small class="text-danger" v-if="product.received_qty > getRemainingQty(product)">
+                    ❌ You can't enter more than the remaining quantity ({{ getRemainingQty(product) }})
+                  </small>
+                  <small class="text-danger" v-else-if="isCompleted(product)">
+                    ✅ Quantity fully received.
+                  </small>
+                  <small class="text-danger" v-else>
+                    Max allowed: <b>{{ getRemainingQty(product) }}</b>
+                  </small>
               </div>
             </div>
 
@@ -297,7 +305,6 @@
             </div>
           </div>
           
-
       </div>
     </section>
   </template>
@@ -370,29 +377,15 @@ import Add from '../../../components/Add.vue';
           this.fetchPOAndInwards();  
         },
         watch: {
-          activeTab() {
-            this.$nextTick(() => {
-              this.reinitDataTables();
-            });
-          }
-        },
-        methods: {
-          reinitDataTables() {
-            // Destroy any existing DataTables
-            $('.dataTable').each(function () {
-              if ($.fn.DataTable.isDataTable(this)) {
-                $(this).DataTable().destroy();
-              }
-            });
-
-            // Initialize after small delay to ensure DOM is updated
-            setTimeout(() => {
-              $('.dataTable').DataTable({
-                responsive: true,
-                autoWidth: false
+            activeTab(newTab) {
+              this.$nextTick(() => {
+                // Destroy any existing DataTable instance before re-initializing
+                $('.dataTable1').DataTable().destroy();
+                $('.dataTable1').DataTable();
               });
-            }, 100);
+            },
           },
+        methods: {
         async fetchPOAndInwards() {
             try {
               const response = await this.callApi('post', 'inward');
@@ -400,7 +393,7 @@ import Add from '../../../components/Add.vue';
                 this.pos     = response.data.pos;
                 this.inwards = response.data.inwards;
                 this.$nextTick(() => {
-                  this.reinitDataTables();
+                 $('.dataTable1').DataTable(); // Initial setup after data load
                 });
               } else {
                 console.error("Error loading data", response.data.message);
@@ -408,7 +401,7 @@ import Add from '../../../components/Add.vue';
             } catch (error) {
               console.error("API error:", error);
             }
-         },
+        },
         async viewPODetail(po_id) {
             try {
               // Fetch the PO data for the given PRN ID
@@ -416,7 +409,6 @@ import Add from '../../../components/Add.vue';
               if (response.data.success) { 
                 this.selectedPOs = response.data.pos;  
                 this.fetchPOAndInwards(); 
-                 
                 setTimeout(() => {
                   $('#viewPOModal').modal('show');
                 }, 100); // Delay in milliseconds (100ms)
@@ -424,7 +416,7 @@ import Add from '../../../components/Add.vue';
             } catch (error) {
               console.error('Error fetching PO data for PRN:', error);
             }
-         }, 
+        }, 
         async addInward(po_id) {
             try {
               const response = await this.callApi('post', 'pos/getSingle', { po_id });
@@ -436,19 +428,26 @@ import Add from '../../../components/Add.vue';
                     received_qty: 0 // Add editable quantity field
                   }))
                 };
-
                 this.$nextTick(() => {
-                   
                   $('#addInwardModal').modal('show');
                 });
               }
             } catch (error) {
               console.error('Error fetching PO for inward:', error);
             }
-         },
+        },
         getRemainingQty(product) {
-            return product.qty - (product.already_received_qty || 0);
-         },
+             return product.qty - (product.already_received_qty || 0);
+        },
+        validateQty(product) {
+            const max = this.getRemainingQty(product);
+            if (product.received_qty > max) {
+              product.received_qty = max;
+            }
+        },
+        isCompleted(product) {
+            return product.received_qty_so_far >= product.total_qty;
+        },
         async submitInward() {
               const payload = {
                 po_id: this.selectedPO.id,
@@ -463,9 +462,9 @@ import Add from '../../../components/Add.vue';
               const response = await this.callApi('post', 'inward/store', payload);
               console.log(response.status);
                  if (response.status === 200 || response.status === 201) {
+                  $(".dataTable1").DataTable().destroy();
                     this.loading = false;
                     this.fetchPOAndInwards();
-                     
                     this.clearForm();
                     return Swal.fire({
                       icon: 'success',
@@ -484,13 +483,12 @@ import Add from '../../../components/Add.vue';
                 else{
                     Swal.fire('Error', err.response?.data , 'error');
                 } 
-         }, 
-         async viewInward(grn) {
+        }, 
+        async viewInward(grn) {
           try {
             const res = await this.callApi('post', 'inward/get-inward-details', { grn });
             this.selectedGRN = res.data;
             this.$nextTick(() => {
-               
               $('#inwardModal').modal('show');
             });
           } catch (error) {
@@ -509,7 +507,7 @@ import Add from '../../../components/Add.vue';
             supplier: '',
             receivedBy: '',
             };
-         },  
+        },  
     }
   };
   </script>

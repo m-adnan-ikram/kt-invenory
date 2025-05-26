@@ -2,7 +2,7 @@
   <section class="section">
     <div class="section-body">
       <div class="row">
-        <div class="col-12">
+        <div class="col-12" v-if="activeTab === 'mr'">
           <div class="card card-primary">
             <div class="card-header">
               <h4>Material Requests - MR</h4>
@@ -176,7 +176,7 @@
             </div>
             <div class="modal-body p-0">
               <div class="table-responsive">
-                <table class="table table-striped table-bordered table-hover mb-0 dataTable">
+                <table class="table table-striped table-bordered table-hover mb-0">
                   <thead class="bg-light">
                     <tr>
                       <th class="text-center">#</th>
@@ -251,6 +251,7 @@ import AddProductModal from '../modal/addProductsModal.vue';
     },
     data() {
       return {
+        activeTab:'mr',
         formID: 'addMRForm',
         products: [],
         mrs: [],
@@ -281,43 +282,17 @@ import AddProductModal from '../modal/addProductsModal.vue';
       if (modalEl) {
         $(modalEl).off('hidden.bs.modal', this.cancelEdit);
       }
-    },
-    watch: {
-      activeTab() {
-        this.$nextTick(() => {
-          this.reinitDataTables();
-        });
-      }
-    },
+    }, 
+  
   methods: {
-    reinitDataTables() {
-        // Destroy any existing DataTables
-        $('.dataTable').each(function () {
-          if ($.fn.DataTable.isDataTable(this)) {
-            $(this).DataTable().destroy();
-          }
-        });
-
-        // Initialize after small delay to ensure DOM is updated
-        setTimeout(() => {
-          $('.dataTable').DataTable({
-            responsive: true,
-            autoWidth: false
-          });
-        }, 200);
-      },
-    async fetchMRs() {
-      try {
+    async fetchMRs() { 
         const response = await this.callApi('post', 'mr');  // Correct your API endpoint here
         this.mrs      = response.data.data;
         this.products = response.data.products;
         this.users    = response.data.users;
         this.$nextTick(() => {
-          this.reinitDataTables();
-        });
-      } catch (error) {
-        console.error(error);
-      }
+          $(".dataTable").DataTable(); // Initial setup after data load
+        }); 
     }, 
     getProductName(id) {
       const product = this.products.find(p => p.id == id);
@@ -341,12 +316,9 @@ import AddProductModal from '../modal/addProductsModal.vue';
       } 
         const payload = { details: this.productsList };
         const response = await this.callApi('post', 'mr/store', payload);
-        this.fetchMRs();
-        this.clearForm();
-        if (response.status === 200 || response.status === 201) {
+        if (response.status === 200 || response.status === 201) { 
             this.loading = false;
             this.fetchMRs();
-            this.clearForm();
             return Swal.fire({
               icon: 'success',
               title: 'Created',
@@ -364,10 +336,6 @@ import AddProductModal from '../modal/addProductsModal.vue';
         else{
             Swal.fire('Error', err.response?.data , 'error');
         } 
-    },
-    clearForm() {
-      this.productsList = [];
-      this.singleProduct = { product_id: '', qty: '', reason: '' };
     },
     viewMR(mr) {
   this.selectedMR = JSON.parse(JSON.stringify(mr)); // Deep clone to avoid direct mutation
@@ -394,7 +362,7 @@ import AddProductModal from '../modal/addProductsModal.vue';
             reason: this.editDetailData.reason,
           };
           const response = await this.callApi('post', 'mr/detail-update', payload);
-          if (response.status === 200 || response.status === 201) {
+          if (response.status === 200 || response.status === 201) { 
             this.loading = false;
             this.fetchMRs();
             this.clearForm();
@@ -464,7 +432,7 @@ import AddProductModal from '../modal/addProductsModal.vue';
         if (confirm.isConfirmed) {
           // User clicked "Yes, delete it!"
           const response = await this.callApi('post', 'mr/mr-delete', { id });
-          if (response.status === 200 || response.status === 201) {
+          if (response.status === 200 || response.status === 201) { 
             this.loading = false;
             this.fetchMRs();
             this.clearForm();
@@ -494,7 +462,10 @@ import AddProductModal from '../modal/addProductsModal.vue';
         modalEl.removeEventListener('hidden.bs.modal', this.cancelEdit);
       }
      },
-
+     clearForm() {
+      this.productsList = [];
+      this.singleProduct = { product_id: '', qty: '', reason: '' };
+    },
   }
 }
 </script>

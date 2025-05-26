@@ -25,7 +25,7 @@
                     </div>
                     <div class="card m-2 p-2">  
                         <div class="table-responsive">
-                    <table class="table table-striped table-hover dataTable">
+                    <table class="table table-striped table-hover dataTable1">
                       <thead>
                         <h5 class="modal-title" id="">Product Categories</h5>
                         <tr>
@@ -106,6 +106,15 @@ export default {
   mounted() {
     this.fetchCategories();
   },
+  watch: {
+      activeTab(newTab) {
+        this.$nextTick(() => {
+          // Destroy any existing DataTable instance before re-initializing
+          $('.dataTable1').DataTable().destroy();
+          $('.dataTable1').DataTable();
+        });
+      },
+    },
   methods: {
     formatDate(dateStr) {
     const date = new Date(dateStr);
@@ -116,6 +125,9 @@ export default {
       const res = await this.callApi('post', 'inventory-product-category');
       this.categoryData = res.data.data;
       this.$emit('categoryChanged', this.categoryData)
+      this.$nextTick(() => {
+              $('.dataTable1').DataTable(); // Initial setup after data load
+            });
     } catch (err) {
       console.error(err);
     }
@@ -132,6 +144,7 @@ export default {
       this.newCategory = '';
       this.fetchCategories();
       if (response.status === 200 || response.status === 201) {
+        $(".dataTable1").DataTable().destroy();
             this.loading = false;
             return Swal.fire({
               icon: 'success',
@@ -178,7 +191,9 @@ async submitCategoryEdit() {
     console.log(response);
     
     if (response.status === 200 || response.status === 201) {
+      $(".dataTable1").DataTable().destroy();
             this.loading = false;
+            this.fetchCategories();
             return Swal.fire({
               icon: 'success',
               title: 'Product Category Updated',
@@ -224,7 +239,9 @@ async deleteCategory(id, index) {
     
     this.fetchCategories();
     if (response.status === 200 || response.status === 201) {
+      $(".dataTable1").DataTable().destroy();
             this.loading = false;
+            this.fetchCategories();
             return Swal.fire({
               icon: 'success',
               title: 'Category Deleted',

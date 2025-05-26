@@ -26,17 +26,18 @@
                 </div>
                 <div class="card-body">
                   <div class="table-responsive">
-                    <table class="table table-striped table-hover dataTable">
+                    <table class="table table-striped table-hover dataTable1">
                       <thead>
                         <tr>
                           <th>Sr No.</th>
                           <th>PO #</th>
                           <th>PRN #</th>
                           <th>MR #</th>
-                          <th>Request By</th>
                           <th>BID #</th>
                           <th>Date</th>
                           <th>Grand Total</th>
+                          <th>Remaining</th>
+                          <th>Request By</th>
                           <th>Supplier Name</th> 
                           <th>Action</th>
                         </tr>
@@ -48,10 +49,11 @@
                             <td>PO - {{ po.id }}</td>
                             <td>{{ po.prn_id }}</td>
                             <td>{{ po.mr_id }}</td>
-                            <td>{{ po.mr.requested_by_user.name }}</td>
                             <td>BID - {{ po.bid_id }}</td>
                             <td>{{ new Date(po.created_at).toLocaleString() }}</td>
                             <th>{{ po.total }} PKR</th>
+                            <th>{{ po.total - po.remaining  }} PKR</th>
+                            <td>{{ po.mr.requested_by_user.name }} PKR</td>
                             <td>{{ po.supplier.name }}</td>
                             <td>
                               <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
@@ -77,7 +79,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable">
+                  <table class="table table-striped table-hover dataTable1">
                     <thead>
                       <tr>
                         <th>Sr No.</th> 
@@ -116,7 +118,7 @@
             </div>
         </div> 
        <!-- Add PO Modal -->
-        <Add id="BidModal" v-if="showAddPOModal" :heading="'PO Request'" :errors="validationErrors" :success="success" :formID="formID"
+         <Add id="BidModal" v-if="showAddPOModal" :heading="'PO Request'" :errors="validationErrors" :success="success" :formID="formID"
           @close="showAddPOModal = false; $('#BidModal').modal('hide');">  
           <div class="modal-content">
             <div class="modal-header py-2 bg-primary text-white">
@@ -317,7 +319,8 @@
                         <th>Qty</th>
                         <th>Rate</th>
                         <th>Subtotal</th>
-                        <th>Tax</th>
+                        <th>Tax%</th>
+                        <th>Tax Amount</th>
                         <th>Delivery</th>
                         <th>Discount</th>
                         <th>Grand Total</th>
@@ -331,12 +334,13 @@
                         <td>{{ parseFloat(item.rate ?? 0).toFixed(2) }}</td>
                         <td>{{ parseFloat(item.sub_total ?? 0).toFixed(2) }}</td>
                         <td>{{ parseFloat(item.tax ?? 0).toFixed(2) }}</td>
+                        <td>{{ parseFloat(item.tax_amount ?? 0).toFixed(2) }}</td>
                         <td>{{ parseFloat(item.delivery ?? 0).toFixed(2) }}</td>
                         <td>{{ parseFloat(item.discount ?? 0).toFixed(2) }}</td>
                         <td class="font-weight-bold text-success">{{ parseFloat(item.net_amount ?? 0).toFixed(2) }}</td>
                       </tr>
                       <tr class="table-info font-weight-bold">
-                        <td colspan="8" class="text-right">PO Grand Total</td>
+                        <td colspan="9" class="text-right">PO Grand Total</td>
                         <td class="text-success"><h6>{{ parseFloat(po.total ?? 0).toFixed(2) }}</h6></td>
                       </tr>
                     </tbody>
@@ -465,10 +469,19 @@
       this.fetchBid_PO(); 
     },
     watch: {
-      activeTab() {
+      activeTab(newTab) {
         this.$nextTick(() => {
-          this.reinitDataTables();
+          // Destroy any existing DataTable instance before re-initializing
+          $('.dataTable1').DataTable().destroy();
+          $('.dataTable1').DataTable();
         });
+      },
+      selectedDetails(newVal) {
+        // Extract unique supplier IDs from selected detail IDs
+        const supplierIds = new Set(
+          newVal.map((detailId) => this.getSupplierIdFromDetail(detailId)) // implement this
+        );
+        this.editableSuppliers = Array.from(supplierIds);
       }
     },
     computed: {
@@ -519,22 +532,7 @@
       return Array.from(products)
      },
     },
-    methods: {
-      reinitDataTables() {
-        // Destroy any existing DataTables
-        $('.dataTable').each(function () {
-          if ($.fn.DataTable.isDataTable(this)) {
-            $(this).DataTable().destroy();
-          }
-        });
-        // Initialize after small delay to ensure DOM is updated
-        setTimeout(() => {
-          $('.dataTable').DataTable({
-            responsive: true,
-            autoWidth: false
-          });
-        }, 100);
-       },
+    methods: { 
       async fetchBid_PO() {
             try {
                 const response = await this.callApi('post', 'pos'); // API call to your controller
@@ -544,7 +542,7 @@
                     this.products  = response.data.products || [];
                     this.pos       = response.data.pos || [];
                     this.$nextTick(() => {
-                      this.reinitDataTables();
+                      $('.dataTable1').DataTable(); // Initial setup after data load
                     });
                 }
             } catch (error) {
@@ -570,27 +568,26 @@
         };
       },
       async openAddPOModal(prnId) {
-      this.showAddPOModal = false
-      this.selectedBids = []
-      try {
-        const res = await this.callApi('post', 'bid-summaries/compareBids', { prn_id: prnId })
-        if (res.data.success && res.data.bids.length > 0) {
-          this.selectedBids = res.data.bids
-          this.selectedMR = res.data.bids[0]?.prn?.mr || null
-          this.validationErrors = {}
-          this.success = ''
-          this.showAddPOModal = true
-          this.$nextTick(() => {
-            
-            $('#BidModal').modal('show')
-          })
-        } else {
-          window.alert("No bids found for this PRN.")
+        this.showAddPOModal = false
+        this.selectedBids = []
+        try {
+          const res = await this.callApi('post', 'bid-summaries/compareBids', { prn_id: prnId })
+          if (res.data.success && res.data.bids.length > 0) {
+            this.selectedBids = res.data.bids
+            this.selectedMR = res.data.bids[0]?.prn?.mr || null
+            this.validationErrors = {}
+            this.success = ''
+            this.showAddPOModal = true
+            this.$nextTick(() => {
+              $('#BidModal').modal('show')
+            })
+          } else {
+            window.alert("No bids found for this PRN.")
+          }
+        } catch (e) {
+          console.error("Error loading bids for PRN:", e)
+          this.validationErrors = e.response?.data?.errors || {}
         }
-      } catch (e) {
-        console.error("Error loading bids for PRN:", e)
-        this.validationErrors = e.response?.data?.errors || {}
-      }
       },
       getRate(productName, supplierId) {
         const bid = this.selectedBids.find(b => b.supplier?.id === supplierId)
@@ -610,13 +607,11 @@
       },
       async viewBidsByPRN(prnId) {
         const payload = { prn_id: prnId };
-
         try {
           const res = await this.callApi('post', 'bid-summaries/show', payload);
           if (res.data.success) {
             this.groupedBids = res.data.bids_by_prn; // Assign the correct bids
             this.$nextTick(() => {
-              
               $('#viewBidDetailModal').modal('show');
             });
           } else {
@@ -629,7 +624,6 @@
       },
       getSubtotal(details) {
         if (!Array.isArray(details)) return 0;
-
         return details.reduce((sum, item) => {
           const total = parseFloat(item?.total) || 0;
           return sum + total;
@@ -653,10 +647,10 @@
         };  
           const response = await this.callApi('post', 'pos/store', payload);
           if (response.status === 200 || response.status === 201) {
+            $(".dataTable1").DataTable().destroy();
             this.loading = false;
             this.fetchBid_PO();
             this.$emit('close');
-            
             this.clearForm();
             return Swal.fire({
               icon: 'success',
@@ -682,7 +676,6 @@
           const response = await this.callApi('post', 'pos/show', { po_id });
           if (response.data.success) {
             this.selectedPOs = response.data.pos;
-            
             setTimeout(() => {
               $('#viewPOModal').modal('show');
             }, 100); // Delay in milliseconds (100ms)
@@ -690,9 +683,7 @@
         } catch (error) {
           console.error('Error fetching PO data for PRN:', error);
         }
-      }
- 
-
+      },
     }
   };
   </script>

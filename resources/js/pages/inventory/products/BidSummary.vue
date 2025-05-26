@@ -28,7 +28,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable">
+                <table class="table table-striped table-hover dataTable1">
                   <thead>
                     <tr>
                       <th>Sr No.</th> 
@@ -70,7 +70,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable">
+                <table class="table table-striped table-hover dataTable1">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -760,29 +760,17 @@ export default {
       }
     },
     watch: {
-  activeTab() {
-    this.$nextTick(() => {
-          this.reinitDataTables();
+      activeTab(newTab) {
+        this.$nextTick(() => {
+          // Destroy any existing DataTable instance before re-initializing
+          $('.dataTable1').DataTable().destroy();
+          $('.dataTable1').DataTable();
         });
-      }
-    },
-  methods: {
-    reinitDataTables() {
-    // Destroy any existing DataTables
-    $('.dataTable').each(function () {
-      if ($.fn.DataTable.isDataTable(this)) {
-        $(this).DataTable().destroy();
-      }
-    });
-
-        // Initialize after small delay to ensure DOM is updated
-        setTimeout(() => {
-          $('.dataTable').DataTable({
-            responsive: true,
-            autoWidth: false
-          });
-        }, 100);
       },
+    },
+
+  methods: {
+     
     removeNewBidForm() {
       this.newBidFormRows = [];
     },
@@ -796,8 +784,8 @@ export default {
           this.suppliers   = response.data.suppliers || [];
           this.prnRequests = this.prns.length;
           this.$nextTick(() => {
-          this.reinitDataTables();
-        });
+              $('.dataTable1').DataTable(); // Initial setup after data load
+            });
         }
       } catch (error) {
         console.error('Failed to fetch bids and PRNs:', error);
@@ -839,9 +827,9 @@ export default {
       console.log("Payload being submitted:", payload); // Check the payload
         const response = await this.callApi('post', 'bid-summaries/store', payload);
         if (response.status === 200 || response.status === 201) {
-            this.loading = false;
+          $(".dataTable1").DataTable().destroy();  
+          this.loading = false;
             this.fetchBid_PRN();
-    
             this.clearForm();
             return Swal.fire({
               icon: 'success',
@@ -900,6 +888,7 @@ export default {
         this.clearForm(); 
         this.newBidFormRows = [];
         if (response.status === 200 || response.status === 201) {
+          $(".dataTable1").DataTable().destroy();
             this.loading = false;
             this.fetchBid_PRN();
             this.clearForm();
@@ -956,7 +945,6 @@ export default {
         });
 
      },
-     
     removeRow(index) {
       this.bidFormRows.splice(index, 1);
      },
@@ -1008,7 +996,6 @@ export default {
         this.groupedBids.forEach(item => {
         this.calculateSubTotal(item);
         this.calculateGrandTotal(item);
-
     });
      }, 
     async fetchPRNProducts(prn) {
@@ -1090,7 +1077,6 @@ export default {
         const res = await this.callApi('post', 'bid-summaries/show', payload);
         if (res.data.success) {
           console.log(res.data);
-          
           this.groupedBids = res.data.bids_by_prn; // result will be an array of PRN objects with their bids
           const selectedBid = this.uniquePRNBids.find(bid => bid.prn?.id === prnId);
           this.selectedPRNStatus = selectedBid?.status;  
@@ -1192,7 +1178,9 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/update', payload);
           // Step 4: Handle response
           if (response.status == 200) {
-    
+            $(".dataTable1").DataTable().destroy();
+            this.fetchBid_PRN(); 
+            this.clearForm();
             Swal.fire({
               icon: 'success',
               title: 'Success!',
@@ -1200,8 +1188,6 @@ export default {
               confirmButtonText: 'OK',
             });
             item.isEditing = false; 
-            this.clearForm();
-            this.fetchBid_PRN(); 
           } else {
             Swal.fire({
               icon: 'error',
@@ -1248,13 +1234,13 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/delete', payload);
           const deletedPRNId = response.data.prn_id;  
           if (response.status == 200) {
-    
+            $(".dataTable1").DataTable().destroy();
+            this.fetchBid_PRN();  
             Swal.fire({
               icon: 'success',
               title: 'Deleted!',
               text: 'Bid has been deleted successfully.',
             }); 
-            this.fetchBid_PRN();  
             await this.viewBidsByPRN(deletedPRNId);
           } else {
             Swal.fire({

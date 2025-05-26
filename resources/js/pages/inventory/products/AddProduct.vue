@@ -304,7 +304,7 @@
       addProductUnitModal
     },
     data() {
-       return { 
+    return { 
           formID: 'addProductForm',
           editId: null,
           deleteId: null,
@@ -322,44 +322,21 @@
           validationErrors: [],
           loading: false,
           success: '',
-       }
-     },
+      }
+    },
     mounted() {
         this.fetchProducts();
      },
-     watch: {
-      activeTab() {
-        this.$nextTick(() => {
-          this.reinitDataTables();
-        });
-      }
-    },
-    methods: {
-      reinitDataTables() {
-        // Destroy any existing DataTables
-        $('.dataTable').each(function () {
-          if ($.fn.DataTable.isDataTable(this)) {
-            $(this).DataTable().destroy();
-          }
-        });
-
-        // Initialize after small delay to ensure DOM is updated
-        setTimeout(() => {
-          $('.dataTable').DataTable({
-            responsive: true,
-            autoWidth: false
-          });
-        }, 200);
-      },
+    methods: { 
     formatDate(date) {
       return new Date(date).toLocaleDateString('en-GB');
-     },
-     categoryChanged( data ){
-        this.categoryOptions = data;
-      },
-      unitChanged( data ){
-        this.unitOptions = data;
-      },
+    },
+    categoryChanged( data ){
+      this.categoryOptions = data;
+    },
+    unitChanged( data ){
+      this.unitOptions = data;
+    },
     async fetchProducts() {
         try {
           const response = await this.callApi('post', 'inventory-product');
@@ -367,21 +344,20 @@
           this.categoryOptions = response.data.categories; // <-- set categories
           this.unitOptions = response.data.units;          // <-- set units
           this.$nextTick(() => {
-          this.reinitDataTables();
+              $('.dataTable').DataTable(); // Initial setup after data load
           });
         } catch (error) {
           console.error('Error fetching products:', error);
         }
-     },
-    async createProduct() {
-        
+    },
+    async createProduct() {    
           this.loading = true;
           // Make sure qty and avg_price are numbers
           const response = await this.callApi('post', 'inventory-product/store', this.data);
           console.log(response); 
           if (response.status === 200 || response.status === 201) {
-            this.fetchProducts();
             //this.clearForm();
+            this.fetchProducts();
             this.loading = false;
             return Swal.fire({
               icon: 'success',
@@ -397,12 +373,11 @@
               text: 'Please fill all field',
             });
           }
-     },
-      
+    }, 
     editProduct(product) {
       this.editId = product.id; // 🛠 Important - set edit mode
       this.fetchProducts();
-     },
+    },
     async saveProduct(product) {
         try {
           this.loading = true;
@@ -415,13 +390,12 @@
             avg_price: product.avg_price,
           };
           const response = await this.callApi('post', 'inventory-product/update', payload);
-           
           this.fetchProducts();
           this.editId = null; // 🛠 Exit edit mode
           if (response.status === 200 || response.status === 201) {
-            this.fetchProducts();
             //this.clearForm();
             this.loading = false;
+            this.fetchProducts();
             return Swal.fire({
               icon: 'success',
               title: 'Product Updated',
@@ -445,10 +419,10 @@
         } finally {
           this.loading = false;
         }
-     },
+    },
     confirmDelete(id) {
         this.deleteId = id; // Store the product ID to delete
-     },
+    },
     async deleteProduct() {
         try {
           await this.callApi('post', 'inventory-product/delete', { id: this.deleteId });
@@ -456,9 +430,9 @@
           this.fetchProducts(); // Refresh list
           this.deleteId = null; // Reset
           if (response.status === 200 || response.status === 201) {
+            this.loading = false;
             this.fetchProducts();
             //this.clearForm();
-            this.loading = false;
             return Swal.fire({
               icon: 'success',
               title: 'Product Deleted',
@@ -476,7 +450,7 @@
         } catch (error) {
           console.error('Error deleting product:', error);
         }
-     },
+    },
     clearForm() {
         this.data = { id: null, name: '', unit_id: '', category_id: '', qty: 0, avg_price: 0 };
         this.validationErrors = [];

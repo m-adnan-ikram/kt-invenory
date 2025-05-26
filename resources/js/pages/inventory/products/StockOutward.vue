@@ -28,7 +28,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable">
+                  <table class="table table-striped table-hover dataTable1">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -69,7 +69,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable">
+                  <table class="table table-striped table-hover dataTable1">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -111,7 +111,7 @@
                   </div>
 
                   <div class="modal-body" v-if="selectedMR">
-                    <table class="table table-bordered dataTable">
+                    <table class="table table-bordered dataTable1">
                     <thead class="table-light bg-light border-top ">
                       <tr>
                         <th>#</th>
@@ -131,17 +131,19 @@
                         <td>{{ item.issued_qty || 0 }}</td>
                         <td>
                           <input
-                            type="number"
-                            class="form-control form-control-sm"
-                            :max="item.qty - (item.issued_qty || 0)"
-                            :min="0"
-                            v-model.number="item.prnQty"
-                            :disabled="item.product?.qty === 0"
-                            placeholder="Enter Issuance Qty"
-                          />
-                          <small class="text-muted d-block mt-1">
-                            Remaining: <strong>{{ item.qty - (item.issued_qty || 0) }}</strong>
-                          </small>
+                              type="number"
+                              class="form-control form-control-sm"
+                              :max="remainingQty(item)"
+                              :min="0"
+                              v-model.number="item.prnQty"
+                              @input="validateQty(item)"
+                              :disabled="item.product?.qty === 0 || remainingQty(item) === 0"
+                              placeholder="Enter Issuance Qty"
+                            />
+
+                            <small v-if="remainingQty(item) === 0" class="text-danger d-block mt-1">
+                              Issuance Completed
+                            </small>
                         </td>
                       </tr>
                     </tbody>
@@ -235,29 +237,15 @@
           this.fetchMRAndOutwards();  
         },
         watch: {
-            activeTab() {
+            activeTab(newTab) {
               this.$nextTick(() => {
-                this.reinitDataTables();
+                // Destroy any existing DataTable instance before re-initializing
+                $('.dataTable1').DataTable().destroy();
+                $('.dataTable1').DataTable();
               });
-            }
-         },
+            },
+        },
         methods: {
-        reinitDataTables() {
-            // Destroy any existing DataTables
-            $('.dataTable').each(function () {
-              if ($.fn.DataTable.isDataTable(this)) {
-                $(this).DataTable().destroy();
-              }
-            });
-
-            // Initialize after small delay to ensure DOM is updated
-            setTimeout(() => {
-              $('.dataTable').DataTable({
-                responsive: true,
-                autoWidth: false
-              });
-            }, 200);
-         },
         async fetchMRAndOutwards() {
             try {
               const response = await this.callApi('post', 'outward');
@@ -265,7 +253,7 @@
                 this.outwards = response.data.outwards || []; // Store Issuance Notes
                 this.mrs = response.data.mrs || [];           // Material Requests, if included
                 this.$nextTick(() => {
-                  this.reinitDataTables();
+                  $('.dataTable1').DataTable(); // Initial setup after data load
                 });
               } else {
                 console.error("Error loading data:", response?.data?.message || 'Unknown error');
@@ -287,7 +275,6 @@
           $('#viewMRModal').modal('show'); // Trigger Bootstrap modal
          },
         viewOutward(item) {
-          
             this.selectedOutward = item; // Store selected item for modal display
          },
         async submitIssuance() {
@@ -311,6 +298,7 @@
               const response = await this.callApi("post", "outward/store", payload);
               console.log(response);
               if (response.status === 200 || response.status === 201) {
+                $(".dataTable1").DataTable().destroy();
                     this.loading = false;
                     $('#viewMRModal').modal('hide');
                     this.fetchMRAndOutwards(); // refresh your data
@@ -333,6 +321,17 @@
                 else{
                     Swal.fire('Error', err.response?.data , 'error');
                 } 
+         },
+        remainingQty(item) {
+            return item.qty - (item.issued_qty || 0);
+         },
+        validateQty(item) {
+            const max = this.remainingQty(item);
+            if (item.prnQty < 0) {
+              item.prnQty = 0;
+            } else if (item.prnQty > max) {
+              item.prnQty = max;
+            }
          },
         clearForm() {
               this.data = {
