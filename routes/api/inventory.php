@@ -12,6 +12,12 @@ use App\Http\Controllers\StockOutwardController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
+//PDFs
+Route::middleware(['custom.sanctum.token.verify'])->prefix('web/v1/')->group(function () {
+    Route::post('mr/pdf/', [MaterialRequestController::class, 'mrPDF']);
+    Route::post('prn/pdf/', [PurchaseRequisitionNoteController::class, 'prnPDF']);
+    Route::post('bid/pdf/', [BidSummariesController::class, 'bidPDF']);
+});
 // Stock Inward
 Route::middleware(['auth:sanctum'])->prefix('web/v1/outward')->group(function () {
     Route::post('/', [StockOutwardController::class, 'index']);     
@@ -54,8 +60,7 @@ Route::middleware(['auth:sanctum'])->prefix('web/v1/mr')->group(function () {
     Route::post('view', [MaterialRequestController::class, 'view']); 
     Route::post('detail-update', [MaterialRequestController::class, 'update']);
     Route::post('mr-delete', [MaterialRequestController::class, 'mr_destroy']);
-    Route::post('detail-delete', [MaterialRequestController::class, 'destroy']);
-    Route::any('pdf/{id}', [MaterialRequestController::class, 'mrPDF'])->middleware('auth:sanctum');
+    Route::post('detail-delete', [MaterialRequestController::class, 'destroy']); 
 });
 // Products
 Route::middleware(['auth:sanctum'])->prefix('web/v1/inventory-product')->group(function () {

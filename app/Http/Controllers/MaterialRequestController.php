@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Inventory\MaterialRequest;
 use App\Models\Inventory\MaterialRequestDetail;
 use App\Models\Inventory\Product;
@@ -112,168 +113,138 @@ class MaterialRequestController extends Controller
     }
     
     public function mrPDF(Request $request)
-    {   
-        return 'submit';
-        die;
-            $pdf = new MYPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-            // set document information
-            $pdf->SetCreator(PDF_CREATOR);
-            $pdf->SetAuthor('GA');
-            $pdf->SetTitle('Jornal Entries');
-    
-            // set default header data
-            // $pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE.' 005', PDF_HEADER_STRING);
-    
-            // set header and footer fonts
-            $pdf->setHeaderFont(array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
-            $pdf->setFooterFont(array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
-    
-            // set default monospaced font
-            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
-    
-            // set margins
-            $pdf->SetMargins(4, PDF_MARGIN_TOP, 5);
-            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
-    
-            // set auto page breaks
-            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
-    
-            // set image scale factor
-            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-    
-            // set some language-dependent strings (optional)
-            if (@file_exists(dirname(__FILE__) . '/lang/eng.php')) {
-                require_once(dirname(__FILE__) . '/lang/eng.php');
-                $pdf->setLanguageArray($l);
-            }
-            // ---------------------------------------------------------
-
-            // set font
-            $pdf->setPrintFooter(false);
-            // add a page
-            $pdf->AddPage('P', 'A4');
-            // set color for background
-    
-            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-            // set color for background
-            $pdf->SetFillColor(255, 255, 0);
-            $pdf->SetFont('times', 'B', 16);
-            $pdf->Ln(-18);
-            $pdf->Cell(0, 0, strtoupper($company_name), 0, 1, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->SetFont('times', 'B', 13);
-            $pdf->Cell(0, 0,strtoupper($transactions[0]->terminal->name??"General"), 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->SetFont('times', '', 12);
-            $pdf->Ln(8);
-            $pdf->Cell(0, 0, $heading, 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Ln();
-            $pdf->Ln();
-    
-            $pdf->SetFont('times', '', 11);
-            // ---------------------------------------------------------
-            
-            $pdf->MultiCell(130, 0, 'Particular  : ' . strtoupper( $particular ), 'B', 'L', 0, 0, '', '', true, 0, false, true, 13, 'T');
-            $pdf->MultiCell(10, 5, '', 0, 'R', 0, 0, '', '', true, 0, false, true, 5, 'M');
-            $pdf->MultiCell(60, 5, 'Amount : ' . number_format($amount, 2, ".", ','), 'B', 'L', 0, 1, '', '', true, 0, false, true, 5, 'T');
-            $pdf->MultiCell(130, 7, 'Voucher # : ' . $request->type.'-'.$request->id, 'B', 'L', 0, 0, '', '', true, 0, false, true, 7, 'B');
-            $pdf->MultiCell(10, 5, '', 0, 'R', 0, 0, '', '', true, 0, false, true, 5, 'M');
-            $pdf->MultiCell(60, 7, 'Dated :  ' . date("d-m-Y", strtotime($dateTime)), 'B', 'L', 0, 1, '', '', true, 0, false, true, 7, 'B');
-            $reference =  $transactions[0]->posting_type . '-' . $transactions[0]->posting_id;
-            $pdf->MultiCell(130, 0, 'Reference # : ' . strtoupper($reference), 'B', 'L', 0, $request->type == 'BP' || $request->type == 'BR' ? 0 : 1, '', '', true, 0, false, true, 7, 'B');
-            $pdf->MultiCell(10, 5, '', 0, 'R', 0, 0, '', '', true, 0, false, true, 5, 'M');
-            if ($request->type == 'BP' || $request->type == 'BR' ) { 
-                $pdf->MultiCell(60, 0, 'Cheque # '. $transactions[0]->cheque . '', 'B', 'L', 0, 1, '', '', true, 0, false, true, 7, 'B');   
-            }
-            $pdf->Ln(5);
-            $pdf->SetFont('times', 'B', 10);
-            // MultiCell($w, $h, $txt, $border=0, $align='J', $fill=0, $ln=1, $x='', $y='', $reseth=true, $stretch=0, $ishtml=false, $autopadding=true, $maxh=0)
-            $pdf->MultiCell(8, 10, 'Sr No', 'TLR', 'L', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            $pdf->MultiCell(20, 10, 'Code', 'TR', 'L', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            $pdf->MultiCell(70, 10, 'Account Title', 'TR', 'L', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            //$pdf->MultiCell(15, 10, 'Account Code', 'TR', 'L', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            $pdf->MultiCell(70, 10, 'Narration', 'TR', 'L', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            $pdf->MultiCell(16, 10, 'Debit', 'TR', 'R', 0, 0, '', '', true, 0, false, true, 10, 'M');
-            $pdf->MultiCell(16, 10, 'Credit', 'TR', 'R', 0, 1, '', '', true, 0, false, true, 10, 'M');
-    
-            $narration_length = strlen($transactions[0]->narration);
-            if ($narration_length > 50) {
-                $narration_length = 18;
-            } else {
-                $narration_length = 12;
-            }
-           
-            foreach ($transactions as $i => $transaction) {
-                // try{
-                    $pdf->SetFont('times', '', 9);
-                    $pdf->MultiCell(8, $narration_length, $i + 1, 1, 'L', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
-                    
-                    $head_name = strtoupper($transaction->account_head->name);
-                    $group = $transaction->account_head->level_three->name;
-                    $code = $transaction->account_head->level_one->code.'-'.$transaction->account_head->level_two->code.'-'.$transaction->account_head->level_three->code.'-'.$transaction->account_head->level_four->code.'-'.$transaction->account_head->code;
-                    $pdf->MultiCell(20, $narration_length,  $code, 'TBR', 'L', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
+    {
+        // Load the first MR with details and relations
+        $mr = MaterialRequest::with(['details.product', 'storeIssuance.details', 'requestedByUser'])->where('id',$request->mr_id)->first();
+        $details     = $mr->details;
+        $company     = Company::where('id', $mr->company_id)->first();
+        $requestedBy = User::where('id', $mr->requested_by)->first();
+        // Start TCPDF
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         
-                    $pdf->MultiCell(70, $narration_length, $head_name . ' - ( ' . $group . ' )', 'TBR', 'L', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
-                    //$pdf->MultiCell(15, $narration_length, $transaction->head_name->code, 'TBR', 'L', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
-                    $pdf->MultiCell(70, $narration_length,strtoupper( $transaction->narration ), 'TBR', 'L', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
-                    $pdf->MultiCell(16, $narration_length, number_format($transaction->debit, 2), 'TBR', 'R', 0, 0, '', '', true, 0, false, true, $narration_length, 'M');
-                    $pdf->MultiCell(16, $narration_length, number_format($transaction->credit, 2 ), 'TBR', 'R', 0, 1, '', '', true, 0, false, true, $narration_length, 'M');
-                // }catch( Exception $e){
-                    // return $transaction;
-                // }
-            }
-            $pdf->MultiCell(8, 12, '', 1, 'L', 0, 0, '', '', true, 0, false, true, 12, 'M');
-            $pdf->MultiCell(20, 12, '', 'TBR', 'L', 0, 0, '', '', true, 0, false, true, 0, 'M');
-            $pdf->MultiCell(70, 12, '', 'TBR', 'L', 0, 0, '', '', true, 0, false, true, 12, 'M');
-            $pdf->MultiCell(70, 12, 'Total : ', 'TBR', 'R', 0, 0, '', '', true, 0, false, true, 12, 'M');
-            $pdf->MultiCell(16, 12, number_format($transactions->sum('debit') , 2), 'TBR', 'R', 0, 0, '', '', true, 0, false, true, 12, 'M');
-            $pdf->MultiCell(16, 12, number_format($transactions->sum('credit'), 2), 'TBR', 'R', 0, 1, '', '', true, 0, false, true, 12, 'M');
-            $pdf->Ln(5);
-            $pdf->SetFont('times', '', 12);
-            $Amount = $transactions->sum('debit');
-            // $f = new NumberFormatter("PKR", NumberFormatter::SPELLOUT);
-            $date_now = date('d-M-Y h:i A', strtotime(now()));
-            $pdf->Ln(15);
-            $pdf->SetFont('times', '', 11);
-            $pdf->Cell(30, 0, '__________________', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(15, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, $transactions[0]->added_by_name->name, 'B', 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(15, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, ' __________________', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(10, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, '__________________', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(10, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, $transactions[0]->approved_by_name->name ?? '', 'B', 1, 'C', 0, '', 0, false, 'T', 'M');
-    
-            $pdf->Cell(30, 0, 'Received By ', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(15, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, 'Prepared By', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(15, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, 'Checked By', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(10, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, 'Finance Manager', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(10, 0, '', 0, 0, 'L', 0, '', 0, false, 'T', 'M');
-            $pdf->Cell(30, 0, 'Approved By', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-    
-            $pdf->Ln(10);
-            $pdf->SetFont('times', 'B', 9);
-            $status = $transactions[0]->approved ? "Approved" : "Pending";
-            $pdf->Cell(0, 0, 'Printed By : ' . Auth::user()->name . ' || Dated : ' . $date_now . ' || Status : ' . $status, 0, 1, 'C', 0, '', 0, false, 'T', 'M');
-            $pdf->SetFont('times', '', 8);
-            $pdf->Ln();
-            $pdf->Cell(0, 0,'"Errors and omissions excepted" (E&OE)', 0, 0, 'C', 0, '', 0, false, 'T', 'M');
-    
-            return $pdf->Output('voucher.pdf', 'I');
-    }
-}
-include(public_path().'/assets/tcpdf/tcpdf.php');
-class MYPDF extends TCPDF
-{
-    public $heading, $terminal;
+        $pdf->SetCreator('Kainat Travel Material Request');
+        $pdf->SetAuthor('Kainat Travel  Material Request');
+        $pdf->SetTitle('Purchase Requisition Note');
 
+        $pdf = new MYPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->setPrintHeader(false); // Optional, if you’re not using a header
+        $pdf->setPrintFooter(true);  // ✅ This is necessary
+        
+        $pdf->setPrintFooter(true);
+        $pdf->AddPage();
+        // Add Logo - top left
+        $logoPath = public_path('assets/img/kt-logo.jpg');
+        if (file_exists($logoPath)) {
+          $pdf->Image($logoPath, 10, 12, 25); // x=10mm, y=10mm, width=30mm
+         }
+        // Title
+        
+        $pdf->Ln(10);
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 10, 'Material Request', 0, 1, 'C');
+        // Project Name
+        $pdf->SetFont('helvetica', '', 11);
+        $pdf->Cell(0, 8, 'Project : '. ($company->name ?? 'Kainat Travels'), 0, 1);
+
+        // Line
+        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+        $pdf->Ln(3);
+
+        // MR Info
+        $pdf->SetFont('helvetica', '', 10);
+        $mrDate = date('d-M-Y', strtotime($mr->created_at));
+        $requestedBy = $requestedBy->name ?? 'N/A';
+
+         $tbl = <<<EOD
+            <table cellpadding="4" border="1">
+                <tr>
+                    <td width="20%"><b>MR #</b></td>
+                    <td width="30%">MR-{$mr->id}</td>
+                    <td width="20%"><b>Date </b></td>
+                    <td width="30%">{$mrDate}</td>
+                </tr>
+                <tr> 
+                    <td><b>Requested By</b></td>
+                    <td colspan="3">{$requestedBy}</td>
+                </tr>
+            </table>
+            EOD;
+
+            $pdf->writeHTML($tbl, true, false, false, false, '');
+            // Request Details
+            $pdf->Ln(1);
+            $pdf->SetFont('helvetica', 'B', 11);
+            $pdf->Cell(0, 8, 'Request Details', 0, 1);
+            $pdf->SetFont('helvetica', '', 10);
+            $table = <<<EOD
+        <table border="1" cellpadding="4">
+            <thead>
+                <tr style="font-weight: bold; background-color: #f0f0f0;">
+                    <th>Sr no.</th> 
+                    <th>Product Name</th> 
+                    <th>Requested QTY</th> 
+                    <th>Issued QTY</th>  
+                </tr>
+            </thead>
+            <tbody>
+        EOD;
+
+            foreach ($details as $i => $item) {
+                $productName  = $item->product->name ?? 'N/A';
+                $askedQty     = $item->qty ?? 0;
+                $issuedQty    = $item->store_Issued_qty ?? 0; 
+                $reason = $item->reason ?? 'For mess'; 
+                $srNo = $i + 1;
+                $table .= <<<EOD
+                <tr>
+                    <td align="center">{$srNo}</td> 
+                    <td>{$productName}</td>
+                    <td align="center">{$askedQty}</td>
+                    <td align="center">{$issuedQty}</td> 
+                </tr>
+                 <tr style="margin-bottom: 15px"> 
+                    <th><b>Reason</b></th> 
+                    <td colspan="4">{$reason}</td> 
+                </tr>
+        EOD;
+            }
+
+            $table .= <<<EOD
+            </tbody>
+        </table>
+        EOD;
+            $pdf->writeHTML($table, true, false, false, false, '');
+            // Output PDF
+
+            $pdf->SetPDFVersion('1.4'); // Enable transparency support
+            $pdf->StartTransform();
+            $pdf->SetAlpha(0.15); // Increase opacity to 30% (less transparent)
+            $pdf->Rotate(45, 105, 148);
+            $pdf->SetFont('helvetica', 'B', 50);
+            $pdf->SetTextColor(0, 0, 0); // Black color
+            $pdf->Text(20, 150, 'Kainat Travels');
+            $pdf->StopTransform();
+            $pdf->SetAlpha(1); // Reset transparency
+
+
+            $pdf->Output('PRN_' . $mr->id . '.pdf', 'I');
+        }
+
+    }
+    require_once(public_path().'/assets/tcpdf/tcpdf.php');
+    class MYPDF extends TCPDF
+{
     public function Header()
     {
     }
-    public function Footer()
+   public function Footer()
     {
+        $this->SetY(-12); // Distance from bottom
+        $this->SetFont('helvetica', 'UB', 10); 
+        $printDate = date('d-m-Y h:i A');
+        $printedBy = auth()->check() ? auth()->user()->name : 'System';
+        $footerText = "Printed by: $printedBy | Printed on: $printDate | Developed by SARZONE";
+        $this->Cell(0, 10, $footerText, 0, false, 'C');
     }
+
 }

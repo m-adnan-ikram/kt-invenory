@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Inventory\BidDetail;
 use App\Models\Inventory\BidSummary;
 use App\Models\Inventory\MaterialRequest;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use TCPDF;
 
 class BidSummariesController extends Controller
 {
@@ -302,6 +304,145 @@ class BidSummariesController extends Controller
         }
     }
     
-    
 
-}
+    public function bidPDF(Request $request)
+    { 
+        return $request;
+        $prnId = $request->prn_id;
+        $bids = BidSummary::with([
+            'supplier',
+            'prn.mr.requestedByUser',
+            'details.product',
+            'details.supplier'
+        ])
+        ->where('prn_id', $prnId)
+        ->get();
+
+        $grouped = [];
+        foreach ($bids as $bid) {
+            $grouped[] = $bid;
+        }
+    
+        $mr = $prn->mr;
+        $details = $prn->details;
+        $company = Company::find($prn->company_id);
+        $requestedBy = $mr->requestedByUser->name ?? 'N/A';
+        $mrDate = date('d-M-Y', strtotime($mr->created_at));
+    
+        // PDF setup
+        $pdf = new MYPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(true);
+        $pdf->AddPage();
+    
+        // Logo
+        $logoPath = public_path('assets/img/kt-logo.jpg');
+        if (file_exists($logoPath)) {
+            $pdf->Image($logoPath, 10, 12, 25);
+        }
+    
+        // Title
+        $pdf->Ln(10);
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 10, 'Purchase Requisition Note', 0, 1, 'C');
+    
+        // Project
+        $pdf->SetFont('helvetica', '', 11);
+        $pdf->Cell(0, 8, 'Project : ' . ($company->name ?? 'Kainat Travels'), 0, 1);
+    
+        // Line
+        $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+        $pdf->Ln(3);
+    
+        // MR Info Table
+        $tbl = <<<EOD
+        <table cellpadding="4" border="1">
+            <tr>
+            <td><b>PRN#</b></td>
+            <td>PRN-{$prn->id}</td>
+            <td ><b>MR #</b></td>
+            <td>MR-{$mr->id}</td>
+                 <td width="20%"><b>Date</b></td>
+                <td>{$mrDate}</td>
+            </tr>
+            <tr>
+                <td><b>Requested By</b></td>
+                <td colspan="5">{$requestedBy}</td>
+            </tr>
+        </table>
+        EOD;
+    
+        $pdf->writeHTML($tbl, true, false, false, false, '');
+    
+        // Request Details
+        $pdf->Ln(1);
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 8, 'PRN Details', 0, 1);
+        $pdf->SetFont('helvetica', '', 10);
+    
+        $table = <<<EOD
+                <table border="1" cellpadding="4">
+                    <thead>
+                        <tr align="center" style="font-weight: bold; background-color: #f0f0f0;">
+                            <th>Sr no.</th>
+                            <th>Product Name</th>
+                            <th>PRN QTY</th>
+                            <th>Available Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                EOD;
+
+                foreach ($details as $i => $item) {
+                    $srNo = $i + 1;
+                    $productName = $item->product->name ?? 'N/A';
+                    $prnQty = $item->qty ?? 0;
+                    $availableQty = $item->product->qty ?? 0;
+
+                    $table .= <<<EOD
+                    <tr>
+                        <td align="center">{$srNo}</td>
+                        <td align="center">{$productName}</td>
+                        <td align="center">{$prnQty}</td>
+                        <td align="center">{$availableQty}</td>
+                    </tr>
+                    EOD;
+                }
+        $table .= <<<EOD
+            </tbody>
+        </table>
+        EOD;
+    
+        $pdf->writeHTML($table, true, false, false, false, '');
+    
+        // Watermark
+        $pdf->SetAlpha(0.15);
+        $pdf->StartTransform();
+        $pdf->Rotate(45, 105, 148);
+        $pdf->SetFont('helvetica', 'B', 50);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Text(20, 150, 'Kainat Travels');
+        $pdf->StopTransform();
+        $pdf->SetAlpha(1);
+    
+        return $pdf->Output('PRN_' . $prn->id . '.pdf', 'I');
+        }
+
+    }
+    require_once(public_path().'/assets/tcpdf/tcpdf.php');
+    class MYPDF extends TCPDF
+    {
+        public function Header()
+        {
+        }
+    public function Footer()
+        {
+            $this->SetY(-12); // Distance from bottom
+            $this->SetFont('helvetica', 'UB', 10); 
+            $printDate = date('d-m-Y h:i A');
+            $printedBy = auth()->check() ? auth()->user()->name : 'System';
+            $footerText = "Printed by: $printedBy | Printed on: $printDate | Developed by SARZONE";
+            $this->Cell(0, 10, $footerText, 0, false, 'C');
+        }
+
+    }
