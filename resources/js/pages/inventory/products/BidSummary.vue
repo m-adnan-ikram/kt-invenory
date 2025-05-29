@@ -32,8 +32,9 @@
                   <thead>
                     <tr>
                       <th>Sr No.</th> 
-                      <th>MR #</th>
+                      <th>Bid #</th>
                       <th>PRN #</th>
+                      <th>MR #</th>
                       <th>Date</th>
                       <th>Request By</th>
                       <th>Action</th>
@@ -42,8 +43,9 @@
                   <tbody>
                     <tr v-for="(bid, index) in uniquePRNBids" :key="bid.id">
                     <td>{{ index + 1 }}</td>
-                    <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
+                    <td>Bid - {{ bid.id || 'N/A' }}</td>
                     <td>PRN - {{ bid.prn?.id || 'N/A' }}</td>
+                    <td>MR - {{ bid.prn?.mr_id || 'N/A' }}</td>
                     <td>{{ new Date(bid.created_at).toLocaleString() }}</td>
                     <td>{{ bid.prn?.mr?.requested_by_user?.name || 'N/A' }}</td>
                      
@@ -1268,7 +1270,7 @@ export default {
     },
     submitBIDPdf(prnId) {
       const form = this.$refs.printBIDPdfForm; 
-      form.querySelector('input[name="bid_id"]').value = prnId; 
+      form.querySelector('input[name="prn_id"]').value = prnId; 
       form.submit();
     },
     loadTinyMCE() {

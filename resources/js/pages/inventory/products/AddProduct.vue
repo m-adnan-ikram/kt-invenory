@@ -93,8 +93,8 @@
           <Add :heading="'Add New Product'" :errors="validationErrors" :success="success" :formID="formID">
                     <div class="row">
                       <div class="form-group col-md-4">
-                        <input type="hidden" v-model="data.qty" value="0" />
-                        <input type="hidden" v-model="data.avg_price" value="0" />
+                        <input type="hidden" v-model="data.qty"/>
+                        <input type="hidden" v-model="data.avg_price"/>
                         <div class="d-flex justify-content-between">
                           <label>Select Product Category</label>
                           <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProductCategoryModal">Add New</button>

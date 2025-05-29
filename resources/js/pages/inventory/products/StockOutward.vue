@@ -50,6 +50,9 @@
                           <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#viewOutwardModal" @click="viewOutward(item)">
                             <i class="fas fa-eye"></i> View 
                           </button>
+                          <button class="btn btn-dark btn-sm mx-1" @click="submitOutwardPdf(item.id)">
+                                <i class="fas fa-print"></i>
+                              </button>
                         </td>
                       </tr>
                       <tr v-if="outwards.length === 0">
@@ -196,9 +199,12 @@
             </div>
            </div>
           </div>
-
         <AddProductModal></AddProductModal>
       </div>
+      <form ref="printOutwardPdfForm" :action="`${$store.state.api_url}api/web/v1/sin/pdf`" method="POST" target="_blank">
+        <input type="hidden" name="token" :value="$store.state.token" />
+        <input type="hidden" name="outward_id" />
+      </form>
     </section>
   </template>
   
@@ -333,6 +339,11 @@
               item.prnQty = max;
             }
          },
+         submitOutwardPdf(outwardId) {
+          const form = this.$refs.printOutwardPdfForm; 
+          form.querySelector('input[name="outward_id"]').value = outwardId; 
+          form.submit();
+        },
         clearForm() {
               this.data = {
               product_name: '',

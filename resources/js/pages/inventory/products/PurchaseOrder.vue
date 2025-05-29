@@ -59,6 +59,9 @@
                               <button class="btn btn-info btn-sm" @click="viewPODetail(po.id)">
                                 <i class="fas fa-eye"></i> View
                               </button>
+                              <button class="btn btn-dark btn-sm mx-1" @click="submitPOPdf(po.id)">
+                                <i class="fas fa-print"></i>
+                              </button>
                             </td>
                           </tr>
                         </template>
@@ -378,8 +381,11 @@
             </div>
           </div>
         </div>
-
       </div>
+      <form ref="printPOPdfForm" :action="`${$store.state.api_url}api/web/v1/po/pdf`" method="POST" target="_blank">
+      <input type="hidden" name="token" :value="$store.state.token" />
+      <input type="hidden" name="po_id" />
+    </form>
     </section>
   </template>
   
@@ -691,6 +697,11 @@
         } catch (error) {
           console.error('Error fetching PO data for PRN:', error);
         }
+      },
+      submitPOPdf(poId) {
+        const form = this.$refs.printPOPdfForm; 
+        form.querySelector('input[name="po_id"]').value = poId; 
+        form.submit();
       },
     }
   };

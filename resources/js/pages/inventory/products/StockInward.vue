@@ -52,6 +52,9 @@
                               <button class="btn btn-info btn-sm" @click="viewInward(grn.id)">
                                 <i class="fas fa-eye"></i>
                               </button>
+                              <button class="btn btn-dark btn-sm mx-1" @click="submitInwardPdf(grn.id)">
+                                <i class="fas fa-print"></i>
+                              </button>
                           </td>
                         </tr>
                       </tbody>
@@ -305,8 +308,11 @@
               </div>
             </div>
           </div>
-          
       </div>
+        <form ref="printInwardPdfForm" :action="`${$store.state.api_url}api/web/v1/grn/pdf`" method="POST" target="_blank">
+        <input type="hidden" name="token" :value="$store.state.token" />
+        <input type="hidden" name="inward_id" />
+      </form>
     </section>
   </template>
   
@@ -506,6 +512,11 @@ import Add from '../../../components/Add.vue';
           } catch (error) {
             this.$swal('Error', 'Failed to fetch GRN details.', 'error');
           }
+        },
+        submitInwardPdf(inwardId) {
+          const form = this.$refs.printInwardPdfForm; 
+          form.querySelector('input[name="inward_id"]').value = inwardId; 
+          form.submit();
         },
         clearForm() {
             this.data = {
