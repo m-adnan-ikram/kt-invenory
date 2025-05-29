@@ -120,6 +120,10 @@
                         <button class="btn btn-info btn-sm" @click="viewPRN(prn)">
                           <i class="fas fa-eye"></i> View
                         </button>
+                         <!-- Pass mr.id instead of full mr object -->
+                         <button class="btn btn-dark btn-sm mx-1" @click="submitPRNPdf(prn.id)">
+                            <i class="fas fa-print"></i>
+                          </button>
                       </td>
                     </tr>
 
@@ -226,8 +230,11 @@
         </div>
         </div>
       </div>
-
     </div>
+    <form ref="printPRNPdfForm" :action="`${$store.state.api_url}api/web/v1/prn/pdf`" method="POST" target="_blank">
+      <input type="hidden" name="token" :value="$store.state.token" />
+      <input type="hidden" name="prn_id" />
+    </form>
   </section>
 </template>
 
@@ -261,10 +268,8 @@ export default {
           $('.dataTable1').DataTable();
         });
       },
-    },
-
+  },
   methods: {
- 
     async fetchMR_PRN() {
         try {
           const response = await this.callApi('post', 'prn');
@@ -365,6 +370,11 @@ export default {
             Swal.fire('Error', err.response?.data , 'error');
         } 
      },
+    submitPRNPdf(prnId) {
+    const form = this.$refs.printPRNPdfForm; 
+    form.querySelector('input[name="prn_id"]').value = prnId; 
+    form.submit();
+  }
   },
 };
 </script>

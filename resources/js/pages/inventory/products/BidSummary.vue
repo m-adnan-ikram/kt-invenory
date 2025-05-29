@@ -51,6 +51,10 @@
                       <button class="btn btn-info btn-sm" @click="viewBidsByPRN(bid.prn?.id)">
                         <i class="fas fa-eye"></i>
                       </button>
+                        <!-- Pass mr.id instead of full mr object -->
+                      <button class="btn btn-dark btn-sm mx-1" @click="submitBIDPdf(bid.id)">
+                        <i class="fas fa-print"></i>
+                      </button>
                     </td>
                   </tr>
                   <tr v-if="uniquePRNBids.length == 0">
@@ -642,7 +646,10 @@
         <AddProductModal></AddProductModal>
       </div>
     </div>
-
+    <form ref="printBIDPdfForm" :action="`${$store.state.api_url}api/web/v1/bid/pdf`" method="POST" target="_blank">
+      <input type="hidden" name="token" :value="$store.state.token" />
+      <input type="hidden" name="bid_id" />
+    </form>
   </section>
   </div>
 </template>
@@ -1258,6 +1265,11 @@ export default {
           });
         }
       }
+    },
+    submitBIDPdf(bidId) {
+      const form = this.$refs.printBIDPdfForm; 
+      form.querySelector('input[name="bid_id"]').value = bidId; 
+      form.submit();
     },
     loadTinyMCE() {
       const script = document.createElement('script');

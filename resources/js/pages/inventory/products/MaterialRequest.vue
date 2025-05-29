@@ -57,7 +57,6 @@
                             'Unknown'
                           }}
                         </span>
-
                       </td>
                       <td>
                         <button
@@ -74,7 +73,6 @@
                             <button class="btn btn-dark btn-sm mx-1" @click="printMR(mr.id)">
                               <i class="fas fa-print"></i>
                             </button>
-
                       </td>
                     </tr>
                   </tbody>
@@ -85,7 +83,6 @@
           </div>
         </div>
       </div>
-
       <!-- Add MR Modal -->
       <div class="modal fade" :id="formID" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg modal-80w modal-dialog-centered" role="document">
@@ -102,7 +99,7 @@
                     <label>Select Product</label>
                     <!-- <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProducts">Add New</button> -->
                   </div>
-                  <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control">
+                  <select v-model="singleProduct.product_id" @change="singleProduct.product_id = $event.target.value" class="form-control ">
                     <option value="">Select</option>
                     <option v-for="prod in products" :key="prod.id" :value="prod.id">{{ prod.name }}</option>
                   </select>
@@ -170,7 +167,6 @@
           </div>
         </div>
       </div>
-
       <!-- View MR Details Modal -->
       <div class="modal fade" id="viewMRModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -241,31 +237,22 @@
           </div>
         </div>
       </div>
-      <!-- MR PDF submit form -->
-      <form :action="`${$store.state.api_url}api/web/v1/mr/pdf/${printMrId}`"
-        method="post" ref="printMRPdf" target="_blank"
-      >
-        <!-- Laravel requires token in headers or hidden input -->
-        <input type="hidden" name="token" :value="$store.state.token">
-        <input type="hidden" name="mr_id" :value="printMrId">
-      </form>
-
-
       <AddProductModal></AddProductModal>
     </div>
+    <form :action="`${this.$store.state.api_url}api/web/v1/mr/pdf`" method="post" ref="printmrPdf" target="_blank">
+      <input type="hidden" name="token" :value="$store.state.token"> 
+      <input type="hidden" name="mr_id" :value="selectedMR"> <!-- new hidden input -->
+    </form>
   </section>
 </template>
 
 <script>
 import Swal from 'sweetalert2';
 import AddProductModal from '../modal/addProductsModal.vue'; 
-import vSelect from 'vue-select'
-import 'vue-select/dist/vue-select.css'
 
   export default {
     components: { 
       AddProductModal,
-      vSelect,
     },
     data() {
       return {
@@ -302,7 +289,6 @@ import 'vue-select/dist/vue-select.css'
         $(modalEl).off('hidden.bs.modal', this.cancelEdit);
       }
     }, 
-  
   methods: {
     async fetchMRs() { 
         const response = await this.callApi('post', 'mr');  // Correct your API endpoint here
@@ -357,19 +343,19 @@ import 'vue-select/dist/vue-select.css'
         } 
     },
     viewMR(mr) {
-  this.selectedMR = JSON.parse(JSON.stringify(mr)); // Deep clone to avoid direct mutation
-  this.editingIndex = null;
-  this.editDetailData = {};
+      this.selectedMR = JSON.parse(JSON.stringify(mr)); // Deep clone to avoid direct mutation
+      this.editingIndex = null;
+      this.editDetailData = {};
     },
     editDetail(detail, index) {
       this.editingIndex = index;
       this.editDetailData = JSON.parse(JSON.stringify(detail)); // deep clone
       this.editDetailData.product_id = detail.product.id; // Ensure product_id is set
-     },
+    },
     cancelEdit() {
         this.editingIndex = null;
         this.editDetailData = {};
-     },
+    },
     async saveDetail(index) {
         
           if (!this.editDetailData || !this.editDetailData.id) {
@@ -402,7 +388,7 @@ import 'vue-select/dist/vue-select.css'
         else{
             Swal.fire('Error', err.response?.data , 'error');
         } 
-     },
+    },
     async deleteDetail(id, index) {
       try {
         const confirm = await Swal.fire({
@@ -428,7 +414,7 @@ import 'vue-select/dist/vue-select.css'
       } catch (error) { 
         Swal.fire('Error', error.response?.data?.message || 'Failed to delete!', 'error');
       }
-     },
+    },
     async confirmDelete(id) {
     
         const confirm = await Swal.fire({
@@ -474,35 +460,20 @@ import 'vue-select/dist/vue-select.css'
         } 
         } 
       
-     },
-     async printMR(id) {
-        try {
-          const response = await this.callApi(
-            'post',
-            `mr/pdf/${id}`,
-            {}, // POST body
-            {
-              responseType: 'blob' // Ensure PDF blob response
-            }
-          );
-
-          // Create Blob and open in new tab
-          const fileURL = window.URL.createObjectURL(
-            new Blob([response.data], { type: 'application/pdf' })
-          );
-          window.open(fileURL);
-        } catch (error) {
-          console.error('PDF generation failed:', error);
-          // Optionally, show a toast or alert
-        }
-      },
-
+    },
+    async printMR(id) {
+      this.selectedMR = id;
+      // Wait for DOM to update the input field
+      this.$nextTick(() => {
+        this.$refs.printmrPdf.submit();
+      });
+    },
     beforeUnmount() {
       const modalEl = document.getElementById('viewMRModal');
       if (modalEl) {
         modalEl.removeEventListener('hidden.bs.modal', this.cancelEdit);
       }
-     },
+    },
      clearForm() {
       this.productsList = [];
       this.singleProduct = { product_id: '', qty: '', reason: '' };
