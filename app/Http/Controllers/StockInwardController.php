@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use TCPDF;
 
 class StockInwardController extends Controller
 {
@@ -190,13 +191,11 @@ class StockInwardController extends Controller
             ], 500);
         }
     }
-    
     public function getInwardDetails(Request $request)
     {
         $request->validate([
             'grn' => 'required|numeric',
         ]);
-    
         $inward = GoodReceiveNote::with([
             'supplier',
             'purchaseOrder',
@@ -251,5 +250,107 @@ class StockInwardController extends Controller
             'company_id' => Auth::user()->company_id,
         ]);
     }
-}
+
+    public function grnPDF(Request $request)
+    {
+        $inward = GoodReceiveNote::with([
+            'supplier',
+            'purchaseOrder.poDetails.product',
+            'details.product'
+        ])->findOrFail($request->inward_id);
+    
+        $po = $inward->purchaseOrder;
+        $supplier = $inward->supplier;
+    
+        // Setup TCPDF
+        $pdf = new MYPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(true);
+        $pdf->AddPage();
+    
+        // Logo
+        $logoPath = public_path('assets/img/kt-logo.jpg');
+        if (file_exists($logoPath)) {
+            $pdf->Image($logoPath, 10, 12, 25);
+        }
+    
+        // Title
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 10, 'Good Receive Note Details', 0, 1, 'C');
+    
+        // Meta info
+        $pdf->SetFont('helvetica', '', 11);
+        $pdf->Ln(15);
+        $pdf->MultiCell(0, 6, "PO #: {$po->id}   |    PRN #: {$po->prn_id}    |    MR #: {$po->mr_id}", 0, 'L');
+        $pdf->MultiCell(0, 6, "PO Date: " . date('d-M-Y', strtotime($po->created_at)), 0, 'L');
+        $pdf->MultiCell(0, 6, "GRN Date: " . date('d-M-Y', strtotime($inward->created_at)), 0, 'L');
+        $pdf->MultiCell(0, 6, "Received By " . $inward->received_by, 0, 'L');
+
+        $pdf->Ln(3);
+     
+    
+        // GRN Details Section
+        $pdf->Ln(5);
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 8, "Good Receive Note (GRN) Details", 0, 1);
+        $pdf->SetFont('helvetica', '', 9);
+    
+        $grnTable = <<<EOD
+            <table border="1" cellpadding="4">
+                <thead>
+                    <tr style="background-color:#f9f9f9;">
+                        <th>#</th> 
+                        <th><b>Product</b></th>
+                        <th><b>Received Quantity</b></th>
+                    </tr>
+                </thead>
+                <tbody>
+        EOD;
+    
+        foreach ($inward->details as $i => $detail) {
+            $grnTable .= "<tr align='center'>
+                <td >" . ($i + 1) . "</td> 
+                <td>{$detail->product->name}</td>
+                <td>{$detail->qty}</td>
+            </tr>";
+        }
+    
+        $grnTable .= <<<EOD
+                </tbody>
+            </table>
+        EOD;
+    
+        $pdf->writeHTML($grnTable, true, false, false, false, '');
+    
+        // Watermark
+        $pdf->SetAlpha(0.1);
+        $pdf->StartTransform();
+        $pdf->Rotate(45, 105, 148);
+        $pdf->SetFont('helvetica', 'B', 50);
+        $pdf->Text(20, 150, 'Kainat Travels');
+        $pdf->StopTransform();
+        $pdf->SetAlpha(1);
+    
+        return $pdf->Output("PO_{$po->id}_GRN.pdf", 'I');
+    }
+    
+
+    }
+    require_once(public_path().'/assets/tcpdf/tcpdf.php');
+    class MYPDF extends TCPDF
+    {
+        public function Header()
+        {
+        }
+    public function Footer()
+        {
+            $this->SetY(-12); // Distance from bottom
+            $this->SetFont('helvetica', 'UB', 10); 
+            $printDate = date('d-m-Y h:i A');
+            $printedBy = auth()->check() ? auth()->user()->name : 'System';
+            $footerText = "Printed by: $printedBy | Printed on: $printDate | Developed by SARZONE";
+            $this->Cell(0, 10, $footerText, 0, false, 'C');
+        }
+
+    }
     

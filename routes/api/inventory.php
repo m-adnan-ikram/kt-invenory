@@ -7,16 +7,25 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductUnitController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseRequisitionNoteController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StockInwardController;
 use App\Http\Controllers\StockOutwardController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
+// Reports
+Route::middleware(['auth:sanctum'])->prefix('web/v1/reports')->group(function () {
+    Route::post('/received', [ReportsController::class, 'received']);     
+
+});
 //PDFs
 Route::middleware(['custom.sanctum.token.verify'])->prefix('web/v1/')->group(function () {
     Route::post('mr/pdf/', [MaterialRequestController::class, 'mrPDF']);
     Route::post('prn/pdf/', [PurchaseRequisitionNoteController::class, 'prnPDF']);
     Route::post('bid/pdf/', [BidSummariesController::class, 'bidPDF']);
+    Route::post('po/pdf/', [PurchaseOrderController::class, 'poPDF']);
+    Route::post('grn/pdf', [StockInwardController::class, 'grnPDF']);
+    Route::post('sin/pdf', [StockOutwardController::class, 'sinPDF']);
 });
 // Stock Inward
 Route::middleware(['auth:sanctum'])->prefix('web/v1/outward')->group(function () {

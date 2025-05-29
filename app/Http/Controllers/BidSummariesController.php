@@ -303,11 +303,8 @@ class BidSummariesController extends Controller
             return response()->json(['message' => 'Failed to delete bid.', 'error' => $e->getMessage()], 500);
         }
     }
-    
-
     public function bidPDF(Request $request)
-    { 
-        return $request->prn_id;
+    {
         $prnId = $request->prn_id;
         $bids = BidSummary::with([
             'supplier',
@@ -317,13 +314,7 @@ class BidSummariesController extends Controller
         ])
         ->where('prn_id', $prnId)
         ->get();
-        
-
-        $grouped = [];
-        foreach ($bids as $bid) {
-            $grouped[] = $bid;
-        }
-
+    
         $prn = PurchaseRequisitionNote::with(['mr.requestedByUser', 'details.product'])->findOrFail($prnId);
         $mr = $prn->mr;
         $details = $prn->details;
@@ -331,97 +322,107 @@ class BidSummariesController extends Controller
         $requestedBy = $mr->requestedByUser->name ?? 'N/A';
         $mrDate = date('d-M-Y', strtotime($mr->created_at));
     
-        // PDF setup
         $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(true);
         $pdf->AddPage();
     
-        // Logo
         $logoPath = public_path('assets/img/kt-logo.jpg');
         if (file_exists($logoPath)) {
             $pdf->Image($logoPath, 10, 12, 25);
         }
     
-        // Title & Project Info
         $pdf->Ln(10);
         $pdf->SetFont('helvetica', 'B', 14);
         $pdf->Cell(0, 10, 'Bid Summary Report', 0, 1, 'C');
+    
         $pdf->SetFont('helvetica', '', 11);
         $pdf->Cell(0, 8, 'Project: ' . ($company->name ?? 'Kainat Travels'), 0, 1);
         $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
         $pdf->Ln(3);
     
-        // MR Info Table
+        // MR Info
         $tbl = <<<EOD
         <table cellpadding="4" border="1">
             <tr>
-                <td><b>PRN#</b></td>
-                <td>PRN-{$prn->id}</td>
-                <td><b>MR#</b></td>
-                <td>MR-{$mr->id}</td>
-                <td><b>Date</b></td>
-                <td>{$mrDate}</td>
+                <td><b>PRN#</b></td><td>PRN-{$prn->id}</td>
+                <td><b>MR#</b></td><td>MR-{$mr->id}</td>
+                <td><b>Date</b></td><td>{$mrDate}</td>
             </tr>
             <tr>
-                <td><b>Requested By</b></td>
-                <td colspan="5">{$requestedBy}</td>
+                <td><b>Requested By</b></td><td colspan="5">{$requestedBy}</td>
             </tr>
         </table>
         EOD;
         $pdf->writeHTML($tbl, true, false, false, false, '');
     
-        // PRN Detail Table
-        $pdf->Ln(1);
+        // PRN Product Details Table
+        $pdf->Ln(2);
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->Cell(0, 8, 'PRN Product Details', 0, 1);
         $pdf->SetFont('helvetica', '', 10);
     
         $table = <<<EOD
-            <table border="1" cellpadding="4">
-                <thead>
-                    <tr align="center" style="font-weight: bold; background-color: #f0f0f0;">
-                        <th>Sr no.</th>
-                        <th>Product Name</th>
-                        <th>PRN QTY</th>
-                        <th>Available Stock</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <table border="1" cellpadding="4">
+            <thead>
+                <tr style="background-color:#f2f2f2; font-weight:bold;" align="center">
+                    <th>Sr No.</th>
+                    <th>Product Name</th>
+                    <th>PRN Qty</th>
+                    <th>Available Stock</th>
+                </tr>
+            </thead>
+            <tbody>
         EOD;
     
         foreach ($details as $i => $item) {
-            $srNo = $i + 1;
-            $productName = $item->product->name ?? 'N/A';
-            $prnQty = $item->qty ?? 0;
-            $availableQty = $item->product->qty ?? 0;
+            $sr = $i + 1;
+            $name = $item->product->name ?? 'N/A';
+            $qty = $item->qty ?? 0;
+            $available = $item->product->qty ?? 0;
     
             $table .= <<<EOD
-                <tr>
-                    <td align="center">{$srNo}</td>
-                    <td>{$productName}</td>
-                    <td align="center">{$prnQty}</td>
-                    <td align="center">{$availableQty}</td>
+                <tr align="center">
+                    <td>{$sr}</td>
+                    <td align="left">{$name}</td>
+                    <td>{$qty}</td>
+                    <td>{$available}</td>
                 </tr>
             EOD;
         }
-    
         $table .= '</tbody></table>';
         $pdf->writeHTML($table, true, false, false, false, '');
     
-        // Add each Bid Summary (Group by Supplier)
+        // Loop through bids
         foreach ($bids as $index => $bid) {
-            $supplier = $bid->supplier->name ?? 'Unknown Supplier';
-    
             $pdf->Ln(5);
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(0, 8, "Bid #".($index+1)." - Supplier: $supplier", 0, 1);
+            $bgColor = $index % 2 == 0 ? '#eaf1fa' : '#f7f7f7';
+            $supplier = $bid->supplier;
     
+            // Supplier Info
+            $pdf->SetFont('helvetica', 'B', 11);
+            $pdf->Cell(0, 8, "Bid from Supplier #".($index+1), 0, 1);
             $pdf->SetFont('helvetica', '', 10);
-            $bidTable = <<<EOD
+    
+            $supplierTable = <<<EOD
+            <table cellpadding="4" border="1" style="background-color: {$bgColor}">
+                <tr>
+                    <td width="33%"><b>Name:</b> {$supplier->name}</td>
+                    <td width="33%"><b>Contact:</b> {$supplier->contact}</td>
+                    <td width="34%"><b>CNIC:</b> {$supplier->cnic}</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><b>Address:</b> {$supplier->address}</td>
+                </tr>
+            </table>
+            EOD;
+            $pdf->writeHTML($supplierTable, true, false, false, false, '');
+    
+            // Product Table
+            $productTable = <<<EOD
             <table border="1" cellpadding="4">
                 <thead>
-                    <tr align="center" style="font-weight: bold; background-color: #f9f9f9;">
+                    <tr style="background-color:#dce6f1; font-weight:bold;" align="center">
                         <th>Sr No.</th>
                         <th>Product</th>
                         <th>Qty</th>
@@ -434,78 +435,101 @@ class BidSummariesController extends Controller
     
             foreach ($bid->details as $i => $d) {
                 $sr = $i + 1;
-                $pname = $d->product->name ?? 'N/A';
+                $product = $d->product->name ?? 'N/A';
                 $qty = $d->qty;
                 $rate = number_format($d->rate, 2);
-                $total = number_format($d->total, 2);
+                $amount = number_format($d->total, 2);
     
-                $bidTable .= <<<EOD
-                <tr>
-                    <td align="center">{$sr}</td>
-                    <td>{$pname}</td>
-                    <td align="center">{$qty}</td>
-                    <td align="right">{$rate}</td>
-                    <td align="right">{$total}</td>
-                </tr>
+                $productTable .= <<<EOD
+                    <tr align="center">
+                        <td>{$sr}</td>
+                        <td align="left">{$product}</td>
+                        <td>{$qty}</td>
+                        <td align="right">{$rate}</td>
+                        <td align="right">{$amount}</td>
+                    </tr>
                 EOD;
             }
     
-            $subtotal = number_format($bid->sub_total, 2);
-            $tax = number_format($bid->tax_amount, 2);
-            $discount = number_format($bid->discount, 2);
-            $totalAmount = number_format($bid->total_amount, 2);
-    
-            $bidTable .= <<<EOD
+            // Totals
+            $productTable .= <<<EOD
                 <tr>
                     <td colspan="4" align="right"><b>Subtotal</b></td>
-                    <td align="right"><b>{$subtotal}</b></td>
+                    <td align="right"><b>{$bid->total}</b></td>
                 </tr>
                 <tr>
                     <td colspan="4" align="right"><b>Tax</b></td>
-                    <td align="right"><b>{$tax}</b></td>
+                    <td align="right"><b>{$bid->tax_amount}</b></td>
                 </tr>
                 <tr>
                     <td colspan="4" align="right"><b>Discount</b></td>
-                    <td align="right"><b>{$discount}</b></td>
+                    <td align="right"><b>{$bid->discount}</b></td>
                 </tr>
-                <tr>
+                <tr style="background-color:#d0e9c6;">
                     <td colspan="4" align="right"><b>Total</b></td>
-                    <td align="right"><b>{$totalAmount}</b></td>
+                    <td align="right"><b>{$bid->total_amount}</b></td>
                 </tr>
                 </tbody>
             </table>
             EOD;
+            $pdf->writeHTML($productTable, true, false, false, false, '');
     
-            $pdf->writeHTML($bidTable, true, false, false, false, '');
+            // Meta Info
+            $quotationDate = date('d-M-Y', strtotime($bid->quotation_date ?? ''));
+            $metaInfo = <<<EOD
+            <table border="1" cellpadding="4" style="background-color: #fcfcfc;">
+                <tr>
+                    <td><b>Quotation Date:</b> {$quotationDate}</td>
+                    <td><b>Quotation Ref:</b> {$bid->quotation_ref}</td>
+                    <td><b>Credit Days:</b> {$bid->credit_days}</td>
+                </tr>
+                <tr>
+                    <td><b>Contact Person:</b> {$bid->contact_person}</td>
+                    <td colspan="2"><b>Contact No:</b> {$bid->contact_person_contact}</td>
+                </tr>
+                <tr>
+                    <td><b>Advance (%):</b> {$bid->advance}%</td>
+                    <td><b>Advance Amount:</b> Rs. {$bid->advance_amount}</td>
+                    <td><b>After Delivery (%):</b> {$bid->after_delivery}%</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>After Delivery Amount:</b> Rs. {$bid->after_delivery_amount}</td>
+                    <td><b>Delivery Charges:</b> Rs. {$bid->delivery_charges}</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><b>Terms & Conditions:</b> {$bid->terms_condition}</td>
+                </tr>
+            </table>
+            EOD;
+            $pdf->writeHTML($metaInfo, true, false, false, false, '');
         }
     
-        // Optional Watermark
-        $pdf->SetAlpha(0.1);
+        // Watermark
+        $pdf->SetAlpha(0.07);
         $pdf->StartTransform();
         $pdf->Rotate(45, 105, 148);
         $pdf->SetFont('helvetica', 'B', 50);
-        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetTextColor(50, 50, 50);
         $pdf->Text(20, 150, 'Kainat Travels');
         $pdf->StopTransform();
         $pdf->SetAlpha(1);
     
         return $pdf->Output('PRN_BidSummary_'.$prn->id.'.pdf', 'I');
     }
-}
+    
+  }
     require_once(public_path().'/assets/tcpdf/tcpdf.php');
     class MYPDF extends TCPDF
     {
         public function Header()
         {
         }
-    public function Footer()
+        public function Footer()
         {
-            $this->SetY(-12); // Distance from bottom
-            $this->SetFont('helvetica', 'UB', 10); 
-            $printDate = date('d-m-Y h:i A');
-            $printedBy = auth()->check() ? auth()->user()->name : 'System';
-            $footerText = "Printed by: $printedBy | Printed on: $printDate | Developed by SARZONE";
-            $this->Cell(0, 10, $footerText, 0, false, 'C');
+            // Position at 15 mm from bottom
+            $this->SetY(-20);
+            $this->SetFont('helvetica', 'U', 10);
+            $this->Cell(0, 10, 'Kainat Travels | Page '.$this->getAliasNumPage().' of '.$this->getAliasNbPages(), 0, false, 'C');
         }
 
     }
