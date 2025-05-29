@@ -307,7 +307,7 @@ class BidSummariesController extends Controller
 
     public function bidPDF(Request $request)
     { 
-        return $request;
+        return $request->prn_id;
         $prnId = $request->prn_id;
         $bids = BidSummary::with([
             'supplier',
@@ -317,12 +317,14 @@ class BidSummariesController extends Controller
         ])
         ->where('prn_id', $prnId)
         ->get();
+        
 
         $grouped = [];
         foreach ($bids as $bid) {
             $grouped[] = $bid;
         }
-    
+
+        $prn = PurchaseRequisitionNote::with(['mr.requestedByUser', 'details.product'])->findOrFail($prnId);
         $mr = $prn->mr;
         $details = $prn->details;
         $company = Company::find($prn->company_id);
@@ -330,7 +332,7 @@ class BidSummariesController extends Controller
         $mrDate = date('d-M-Y', strtotime($mr->created_at));
     
         // PDF setup
-        $pdf = new MYPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(true);
         $pdf->AddPage();
@@ -341,16 +343,12 @@ class BidSummariesController extends Controller
             $pdf->Image($logoPath, 10, 12, 25);
         }
     
-        // Title
+        // Title & Project Info
         $pdf->Ln(10);
         $pdf->SetFont('helvetica', 'B', 14);
-        $pdf->Cell(0, 10, 'Purchase Requisition Note', 0, 1, 'C');
-    
-        // Project
+        $pdf->Cell(0, 10, 'Bid Summary Report', 0, 1, 'C');
         $pdf->SetFont('helvetica', '', 11);
-        $pdf->Cell(0, 8, 'Project : ' . ($company->name ?? 'Kainat Travels'), 0, 1);
-    
-        // Line
+        $pdf->Cell(0, 8, 'Project: ' . ($company->name ?? 'Kainat Travels'), 0, 1);
         $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
         $pdf->Ln(3);
     
@@ -358,11 +356,11 @@ class BidSummariesController extends Controller
         $tbl = <<<EOD
         <table cellpadding="4" border="1">
             <tr>
-            <td><b>PRN#</b></td>
-            <td>PRN-{$prn->id}</td>
-            <td ><b>MR #</b></td>
-            <td>MR-{$mr->id}</td>
-                 <td width="20%"><b>Date</b></td>
+                <td><b>PRN#</b></td>
+                <td>PRN-{$prn->id}</td>
+                <td><b>MR#</b></td>
+                <td>MR-{$mr->id}</td>
+                <td><b>Date</b></td>
                 <td>{$mrDate}</td>
             </tr>
             <tr>
@@ -371,52 +369,118 @@ class BidSummariesController extends Controller
             </tr>
         </table>
         EOD;
-    
         $pdf->writeHTML($tbl, true, false, false, false, '');
     
-        // Request Details
+        // PRN Detail Table
         $pdf->Ln(1);
         $pdf->SetFont('helvetica', 'B', 11);
-        $pdf->Cell(0, 8, 'PRN Details', 0, 1);
+        $pdf->Cell(0, 8, 'PRN Product Details', 0, 1);
         $pdf->SetFont('helvetica', '', 10);
     
         $table = <<<EOD
-                <table border="1" cellpadding="4">
-                    <thead>
-                        <tr align="center" style="font-weight: bold; background-color: #f0f0f0;">
-                            <th>Sr no.</th>
-                            <th>Product Name</th>
-                            <th>PRN QTY</th>
-                            <th>Available Stock</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                EOD;
-
-                foreach ($details as $i => $item) {
-                    $srNo = $i + 1;
-                    $productName = $item->product->name ?? 'N/A';
-                    $prnQty = $item->qty ?? 0;
-                    $availableQty = $item->product->qty ?? 0;
-
-                    $table .= <<<EOD
-                    <tr>
-                        <td align="center">{$srNo}</td>
-                        <td align="center">{$productName}</td>
-                        <td align="center">{$prnQty}</td>
-                        <td align="center">{$availableQty}</td>
+            <table border="1" cellpadding="4">
+                <thead>
+                    <tr align="center" style="font-weight: bold; background-color: #f0f0f0;">
+                        <th>Sr no.</th>
+                        <th>Product Name</th>
+                        <th>PRN QTY</th>
+                        <th>Available Stock</th>
                     </tr>
-                    EOD;
-                }
-        $table .= <<<EOD
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
         EOD;
     
+        foreach ($details as $i => $item) {
+            $srNo = $i + 1;
+            $productName = $item->product->name ?? 'N/A';
+            $prnQty = $item->qty ?? 0;
+            $availableQty = $item->product->qty ?? 0;
+    
+            $table .= <<<EOD
+                <tr>
+                    <td align="center">{$srNo}</td>
+                    <td>{$productName}</td>
+                    <td align="center">{$prnQty}</td>
+                    <td align="center">{$availableQty}</td>
+                </tr>
+            EOD;
+        }
+    
+        $table .= '</tbody></table>';
         $pdf->writeHTML($table, true, false, false, false, '');
     
-        // Watermark
-        $pdf->SetAlpha(0.15);
+        // Add each Bid Summary (Group by Supplier)
+        foreach ($bids as $index => $bid) {
+            $supplier = $bid->supplier->name ?? 'Unknown Supplier';
+    
+            $pdf->Ln(5);
+            $pdf->SetFont('helvetica', 'B', 11);
+            $pdf->Cell(0, 8, "Bid #".($index+1)." - Supplier: $supplier", 0, 1);
+    
+            $pdf->SetFont('helvetica', '', 10);
+            $bidTable = <<<EOD
+            <table border="1" cellpadding="4">
+                <thead>
+                    <tr align="center" style="font-weight: bold; background-color: #f9f9f9;">
+                        <th>Sr No.</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+            EOD;
+    
+            foreach ($bid->details as $i => $d) {
+                $sr = $i + 1;
+                $pname = $d->product->name ?? 'N/A';
+                $qty = $d->qty;
+                $rate = number_format($d->rate, 2);
+                $total = number_format($d->total, 2);
+    
+                $bidTable .= <<<EOD
+                <tr>
+                    <td align="center">{$sr}</td>
+                    <td>{$pname}</td>
+                    <td align="center">{$qty}</td>
+                    <td align="right">{$rate}</td>
+                    <td align="right">{$total}</td>
+                </tr>
+                EOD;
+            }
+    
+            $subtotal = number_format($bid->sub_total, 2);
+            $tax = number_format($bid->tax_amount, 2);
+            $discount = number_format($bid->discount, 2);
+            $totalAmount = number_format($bid->total_amount, 2);
+    
+            $bidTable .= <<<EOD
+                <tr>
+                    <td colspan="4" align="right"><b>Subtotal</b></td>
+                    <td align="right"><b>{$subtotal}</b></td>
+                </tr>
+                <tr>
+                    <td colspan="4" align="right"><b>Tax</b></td>
+                    <td align="right"><b>{$tax}</b></td>
+                </tr>
+                <tr>
+                    <td colspan="4" align="right"><b>Discount</b></td>
+                    <td align="right"><b>{$discount}</b></td>
+                </tr>
+                <tr>
+                    <td colspan="4" align="right"><b>Total</b></td>
+                    <td align="right"><b>{$totalAmount}</b></td>
+                </tr>
+                </tbody>
+            </table>
+            EOD;
+    
+            $pdf->writeHTML($bidTable, true, false, false, false, '');
+        }
+    
+        // Optional Watermark
+        $pdf->SetAlpha(0.1);
         $pdf->StartTransform();
         $pdf->Rotate(45, 105, 148);
         $pdf->SetFont('helvetica', 'B', 50);
@@ -425,10 +489,9 @@ class BidSummariesController extends Controller
         $pdf->StopTransform();
         $pdf->SetAlpha(1);
     
-        return $pdf->Output('PRN_' . $prn->id . '.pdf', 'I');
-        }
-
+        return $pdf->Output('PRN_BidSummary_'.$prn->id.'.pdf', 'I');
     }
+}
     require_once(public_path().'/assets/tcpdf/tcpdf.php');
     class MYPDF extends TCPDF
     {
