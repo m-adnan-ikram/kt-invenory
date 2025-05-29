@@ -52,7 +52,7 @@
                         <i class="fas fa-eye"></i>
                       </button>
                         <!-- Pass mr.id instead of full mr object -->
-                      <button class="btn btn-dark btn-sm mx-1" @click="submitBIDPdf(bid.id)">
+                      <button class="btn btn-dark btn-sm mx-1" @click="submitBIDPdf(bid.prn?.id)">
                         <i class="fas fa-print"></i>
                       </button>
                     </td>
@@ -648,7 +648,7 @@
     </div>
     <form ref="printBIDPdfForm" :action="`${$store.state.api_url}api/web/v1/bid/pdf`" method="POST" target="_blank">
       <input type="hidden" name="token" :value="$store.state.token" />
-      <input type="hidden" name="bid_id" />
+      <input type="hidden" name="prn_id" />
     </form>
   </section>
   </div>
@@ -1266,9 +1266,9 @@ export default {
         }
       }
     },
-    submitBIDPdf(bidId) {
+    submitBIDPdf(prnId) {
       const form = this.$refs.printBIDPdfForm; 
-      form.querySelector('input[name="bid_id"]').value = bidId; 
+      form.querySelector('input[name="bid_id"]').value = prnId; 
       form.submit();
     },
     loadTinyMCE() {
