@@ -28,7 +28,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable1">
+                  <table class="table table-striped table-hover dataTable2">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -72,7 +72,7 @@
               </div>
               <div class="card-body">
                 <div class="table-responsive">
-                  <table class="table table-striped table-hover dataTable1">
+                  <table class="table table-striped table-hover dataTable2">
                     <thead>
                       <tr>
                         <th>Sr No.</th>
@@ -114,7 +114,7 @@
                   </div>
 
                   <div class="modal-body" v-if="selectedMR">
-                    <table class="table table-bordered dataTable1">
+                    <table class="table table-bordered dataTable2">
                     <thead class="table-light bg-light border-top ">
                       <tr>
                         <th>#</th>
@@ -246,8 +246,8 @@
             activeTab(newTab) {
               this.$nextTick(() => {
                 // Destroy any existing DataTable instance before re-initializing
-                $('.dataTable1').DataTable().destroy();
-                $('.dataTable1').DataTable();
+                $('.dataTable2').DataTable().destroy();
+                $('.dataTable2').DataTable();
               });
             },
         },
@@ -259,7 +259,7 @@
                 this.outwards = response.data.outwards || []; // Store Issuance Notes
                 this.mrs = response.data.mrs || [];           // Material Requests, if included
                 this.$nextTick(() => {
-                  $('.dataTable1').DataTable(); // Initial setup after data load
+                  $('.dataTable2').DataTable(); // Initial setup after data load
                 });
               } else {
                 console.error("Error loading data:", response?.data?.message || 'Unknown error');
@@ -304,7 +304,7 @@
               const response = await this.callApi("post", "outward/store", payload);
               console.log(response);
               if (response.status === 200 || response.status === 201) {
-                $(".dataTable1").DataTable().destroy();
+                $(".dataTable2").DataTable().destroy();
                     this.loading = false;
                     $('#viewMRModal').modal('hide');
                     this.fetchMRAndOutwards(); // refresh your data

@@ -28,7 +28,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable1">
+                <table class="table table-striped table-hover dataTable2">
                   <thead>
                     <tr>
                       <th>Sr No.</th> 
@@ -76,7 +76,7 @@
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped table-hover dataTable1">
+                <table class="table table-striped table-hover dataTable2">
                   <thead>
                     <tr>
                       <th>Sr No.</th>
@@ -745,7 +745,6 @@ export default {
    },
   mounted() { 
       this.loadTinyMCE();
-      this.fetchBid_PRN();
       const script = document.createElement('script');
       script.src = "https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js";
       script.referrerPolicy = "origin";
@@ -757,6 +756,7 @@ export default {
     $('#viewBidModal').on('hidden.bs.modal', () => {
         this.newBidFormRows = [];
       });
+    this.fetchBid_PRN();
     },
   computed: {
     uniquePRNBids() {
@@ -772,14 +772,13 @@ export default {
       activeTab(newTab) {
         this.$nextTick(() => {
           // Destroy any existing DataTable instance before re-initializing
-          $('.dataTable1').DataTable().destroy();
-          $('.dataTable1').DataTable();
+          $('.dataTable2').DataTable().destroy();
+          $('.dataTable2').DataTable();
         });
       },
     },
 
   methods: {
-     
     removeNewBidForm() {
       this.newBidFormRows = [];
     },
@@ -793,8 +792,8 @@ export default {
           this.suppliers   = response.data.suppliers || [];
           this.prnRequests = this.prns.length;
           this.$nextTick(() => {
-              $('.dataTable1').DataTable(); // Initial setup after data load
-            });
+            $('.dataTable2').DataTable(); // Initial setup after data load
+          });
         }
       } catch (error) {
         console.error('Failed to fetch bids and PRNs:', error);
@@ -836,7 +835,7 @@ export default {
       console.log("Payload being submitted:", payload); // Check the payload
         const response = await this.callApi('post', 'bid-summaries/store', payload);
         if (response.status === 200 || response.status === 201) {
-          $(".dataTable1").DataTable().destroy();  
+          $(".dataTable2").DataTable().destroy();  
           this.loading = false;
             this.fetchBid_PRN();
             this.clearForm();
@@ -859,7 +858,6 @@ export default {
         }  
      }, 
     async createNewBid() {
-     
         const payload = {
           prn_id: this.selectedPRNId,
           mr_id: this.selectedMRId,
@@ -897,7 +895,7 @@ export default {
         this.clearForm(); 
         this.newBidFormRows = [];
         if (response.status === 200 || response.status === 201) {
-          $(".dataTable1").DataTable().destroy();
+          $(".dataTable2").DataTable().destroy();
             this.loading = false;
             this.fetchBid_PRN();
             this.clearForm();
@@ -918,7 +916,6 @@ export default {
         else{
             Swal.fire('Error', err.response?.data , 'error');
         }  
-        
       },
     addRow() {
         if (!this.prnProducts || !this.prnProducts.length) {
@@ -1187,7 +1184,7 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/update', payload);
           // Step 4: Handle response
           if (response.status == 200) {
-            $(".dataTable1").DataTable().destroy();
+            $(".dataTable2").DataTable().destroy();
             this.fetchBid_PRN(); 
             this.clearForm();
             Swal.fire({
@@ -1243,7 +1240,7 @@ export default {
           const response = await this.callApi('post', 'bid-summaries/delete', payload);
           const deletedPRNId = response.data.prn_id;  
           if (response.status == 200) {
-            $(".dataTable1").DataTable().destroy();
+            $(".dataTable2").DataTable().destroy();
             this.fetchBid_PRN();  
             Swal.fire({
               icon: 'success',
