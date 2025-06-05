@@ -16,7 +16,12 @@ use Illuminate\Support\Facades\Route;
 // Reports
 Route::middleware(['auth:sanctum'])->prefix('web/v1/reports')->group(function () {
     Route::post('/received', [ReportsController::class, 'received']);     
-
+    Route::post('/issued', [ReportsController::class, 'issued']);   
+    Route::post('/product-control-register', [ReportsController::class, 'product_control']);   
+    // filter
+    Route::post('/filter/product-control-register', [ReportsController::class, 'filter_product_control']);   
+    Route::post('/filter/filter_received', [ReportsController::class, 'filter_received']);   
+    Route::post('/filter/filter_issued', [ReportsController::class, 'filter_issued']);   
 });
 //PDFs
 Route::middleware(['custom.sanctum.token.verify'])->prefix('web/v1/')->group(function () {

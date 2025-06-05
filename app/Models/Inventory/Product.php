@@ -31,6 +31,14 @@ class Product extends Model
     {
         return $this->hasMany(PurchaseRequisitionNoteDetail::class);
     }
+    public function purchaseDetails()
+    {
+        return $this->hasMany(PurchaseOrderDetail::class, 'product_id');
+    }
+
+        public function issuanceDetails() {
+            return $this->hasMany(StoreIssuanceNoteDetail::class);
+        } 
 
 }
 

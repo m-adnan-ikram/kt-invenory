@@ -85,29 +85,25 @@ class PurchaseOrderController extends Controller
                 }
     
                 // Charges from bid summary
-                $deliveryCharges = floatval($bid->delivery_charges);
-                $totalTax        = floatval($bid->tax);
-                $taxAmount       = floatval($bid->tax_amount);
-                $totalDiscount   = floatval($bid->discount);
+                $deliveryCharges = $bid->delivery_charges;
+                $totalTax        = $bid->tax;
+                $taxAmount       = $bid->tax_amount;
+                $totalDiscount   = $bid->discount;
     
                 $subTotalSum = $bidDetails->sum(fn($d) => $d->qty * $d->rate);
                 $poDetails = [];
                 $poTotal = 0;
     
                 foreach ($bidDetails as $detail) {
-                    $qty      = floatval($detail->qty);
-                    $rate     = floatval($detail->rate);
-                    $subTotal = $qty * $rate;
-    
+                    $qty        = $detail->qty;
+                    $rate       = $detail->rate;
+                    $subTotal   = $qty * $rate;
                     $proportion = $subTotal / ($subTotalSum ?: 1);
-    
-                    $delivery  = round($deliveryCharges * $proportion, 2);
-                    $tax_amt   = round($taxAmount * $proportion, 2);
-                    $discount  = round($totalDiscount * $proportion, 2);
-    
-                    $netAmount = $subTotal + $tax_amt + $delivery - $discount;
-                    $poTotal  += $netAmount;
-    
+                    $delivery   = $deliveryCharges * $proportion;
+                    $tax_amt    = $taxAmount * $proportion;
+                    $discount   = $totalDiscount * $proportion;
+                    $netAmount  = $subTotal + $tax_amt + $delivery - $discount;
+                    $poTotal   += $netAmount;
                     $poDetails[] = [
                         'product_id' => $detail->product_id,
                         'qty'        => $qty,

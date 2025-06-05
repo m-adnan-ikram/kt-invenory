@@ -106,7 +106,7 @@ class StockInwardController extends Controller
                     $sub_total = ($poDetail->rate * $receivedQty) + $poDetail->tax_amount + $poDetail->delivery - $poDetail->discount;
                     // Insert GRN Detail 
                     $total_net_amount += $sub_total;
-                     GoodReceiveNoteDetail::create([
+                    GoodReceiveNoteDetail::create([
                         'good_receive_note_id' => $grn->id,
                         'product_id'           => $productId,
                         'qty'                  => $receivedQty,
@@ -115,9 +115,29 @@ class StockInwardController extends Controller
                         'tax'                  => $poDetail->tax_amount,
                         'delivery_charges'     => $poDetail->delivery,
                         'discount'             => $poDetail->discount,
-                        'net_amount'           => $sub_total, // or calculate net_amount per unit if needed
-                        'company_id'              => Auth::user()->company_id,
-                    ]);   
+                        'net_amount'           => $sub_total, // already calculated total after tax/discount etc.
+                        'company_id'           => Auth::user()->company_id,
+                    ]);
+                    // Step 2: Fetch all GRN records for this product to recalculate avg price
+                    $grnDetails = GoodReceiveNoteDetail::where('product_id', $productId)->get();
+                    if($productName->qty == 0){
+                        $productName->qty       = $receivedQty;
+                        $product_avg_price = $sub_total / $receivedQty;
+                        $productName->avg_price = $product_avg_price;
+                        $productName->save();
+                    }
+                    else{
+                        // Step 3: Calculate total qty and net amount
+                        $totalGRNQty   = $grnDetails->sum('qty');
+                        $totalGRNTotal = $grnDetails->sum('net_amount');
+                        // Step 4: Safely calculate avg price
+                        $product_avg_price = $totalGRNQty > 0 ? ($totalGRNTotal / $totalGRNQty) : 0;
+                        // Step 5: Update product info
+                        $currentQty = $productName->qty ?? 0;
+                        $productName->qty       = $currentQty + $receivedQty;
+                        $productName->avg_price = $product_avg_price;
+                        $productName->save();
+                    }
                     if ($productName->product_head_id) {
                         $productHead = AccountHead::findOrFail($productName->product_head_id);
                     } else {
@@ -142,25 +162,18 @@ class StockInwardController extends Controller
                         "Generated GRN of ".$productName->name." Received QTY@". $receivedQty ." with Price@". $poDetail->rate .$supplierName->name." with "."Delivery Charges@". $poDetail->delivery. " Tax@".$poDetail->tax." Discount@".$poDetail->discount,
                         $grn->id //posting id
                     );
-                    // Calculate total value of previous stock
-                    $previousStockValue = $productName->avg_price * $productName->qty;
-                    // Extract charges from PO Detail
-                    $rate     = $poDetail->rate;
-                    $qty      = $receivedQty;
-                    $delivery = $poDetail->delivery;
-                    $tax      = $poDetail->tax_amount;
-                    $discount = $poDetail->discount;
-                    // Calculate net amount for received quantity (already saved in poDetail)
-                    $netTotal = $rate * $qty + $tax + $delivery - $discount;
-                    // Calculate net unit rate (real cost per unit after all charges)
-                    $netUnitRate = $qty > 0 ? $netTotal / $qty : $rate;
-                    // Calculate total new quantity and updated weighted average rate
-                    $totalQTY     = $productName->qty + $qty;
-                    $newAvgRate   = $totalQTY > 0 ? ($previousStockValue + $netTotal) / $totalQTY : $netUnitRate;
-                    // Update product stock and average price
-                    $productName->qty       = $totalQTY;
-                    $productName->avg_price = $newAvgRate;
-                    $productName->save();
+
+                    
+                    
+                    // $previousStockValue = $productName->avg_price * $productName->qty;
+                    // $rate     = $poDetail->rate;
+                    // $delivery = $poDetail->delivery;
+                    // $tax      = $poDetail->tax_amount;
+                    // $discount = $poDetail->discount; 
+                    // $netTotal = $rate * $qty + $tax + $delivery - $discount; 
+                    // $netUnitRate = $qty > 0 ? $netTotal / $qty : $rate; 
+                    // $newAvgRate = $totalQTY > 0 ? ($previousStockValue + $netTotal) / $totalQTY : $netUnitRate;
+                    // $roundedAvgRate = round($newAvgRate); 
                 }
                 
             }

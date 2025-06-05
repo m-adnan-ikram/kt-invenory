@@ -22,6 +22,7 @@ class GoodReceiveNote extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
+    
     public function grnDetails()
     {
         return $this->hasMany(GoodReceiveNoteDetail::class, 'good_receive_note_id');

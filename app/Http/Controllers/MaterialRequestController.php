@@ -19,7 +19,7 @@ class MaterialRequestController extends Controller
     public function index()
     {
         $mrs = MaterialRequest::with(['details.product', 'requestedByUser', 'storeIssuance.details'])->latest()->get();
-        $products = Product::all();
+        $products = Product::latest()->get();
         return response()->json([
             'success'  => true,
             'message'  => 'Material Requests fetched successfully.',
