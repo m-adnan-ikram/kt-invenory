@@ -494,7 +494,6 @@
         const prn = po.prn || {};
         const mr = po.mr || {};
         const user = mr.requested_by_user || {};
-
         if (!grouped[prnId]) {
           grouped[prnId] = {
             prn_id: prnId,

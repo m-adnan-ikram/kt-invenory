@@ -381,6 +381,7 @@ import Add from '../../../components/Add.vue';
         };
         },
         mounted() {
+          
           this.fetchPOAndInwards();  
         },
         watch: {
@@ -458,15 +459,7 @@ import Add from '../../../components/Add.vue';
         isCompleted(product) {
             return product.received_qty_so_far >= product.total_qty;
         },
-        async submitInward() {
-          const overfilled = this.products.find(p => p.received_qty > this.getRemainingQty(p));
-            if (overfilled) {
-              return Swal.fire({
-                icon: 'error',
-                title: 'Invalid Quantity',
-                text: `You entered more than allowed for ${overfilled.name || 'a product'}. Max: ${this.getRemainingQty(overfilled)}.`,
-              });
-            }
+        async submitInward() { 
               const payload = {
                 po_id: this.selectedPO.id,
                 products: this.selectedPO.products.map(p => ({
