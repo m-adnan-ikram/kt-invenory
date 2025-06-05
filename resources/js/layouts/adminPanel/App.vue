@@ -43,5 +43,10 @@ export default {
         this.$store.commit('updateAppUrl',this.app_url);
     }
 }
+// JavaScript to close modal
+$(document).on('click', '.close', function() {
+  $(this).closest('.modal').hide(); // Or use fadeOut()
+});
+
 
 </script>

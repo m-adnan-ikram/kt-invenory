@@ -100,6 +100,7 @@
                           <button class="btn btn-primary p-0 m-0 px-2" data-toggle="modal" data-target="#addProductCategoryModal">Add New</button>
                         </div>
                         <!-- Category Dropdown -->
+                         
                           <select v-model="data.category_id" class="form-control">
                               <option value="">Select Category</option>
                               <option v-for="cat in categoryOptions" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -295,13 +296,14 @@
   import addProductCategoryModal from '../modal/addProductCategoryModal.vue';
   import addProductUnitModal from '../modal/addProductUnitModal.vue';
   import Swal from 'sweetalert2';
-   
+
   export default {
     name: "ProductManager",
+
     components: {
       Add,
       addProductCategoryModal,
-      addProductUnitModal
+      addProductUnitModal,
     },
     data() {
     return { 
